@@ -1,0 +1,34 @@
+import type { ColorScale } from '../../lib/ride/types';
+
+interface ColorScaleToggleProps {
+  value: ColorScale;
+  onChange: (next: ColorScale) => void;
+  curvyEnabled: boolean;
+}
+
+const OPTIONS: Array<{ value: ColorScale; label: string }> = [
+  { value: 'speed', label: 'Speed' },
+  { value: 'grade', label: 'Grade' },
+  { value: 'aerobar', label: 'Aerobar' },
+  { value: 'curvy', label: 'Curvy' },
+];
+
+export function ColorScaleToggle({ value, onChange, curvyEnabled }: ColorScaleToggleProps) {
+  const options = curvyEnabled ? OPTIONS : OPTIONS.filter((option) => option.value !== 'curvy');
+  return (
+    <div className="color-scale">
+      <span className="color-scale__label">Color</span>
+      <div className="units-toggle">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            className={value === option.value ? 'active' : ''}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
