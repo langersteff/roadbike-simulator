@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildChunks, evaluateChunk } from './simulate';
+import { buildChunks, evaluateChunk, heatPowerFactor } from './simulate';
 import { headwindKphFromWeather } from './wind';
 import { computeCurvyRanges, type SplitConfig } from '../chunking/strategies';
 import { withCumulativeKm } from '../gpx/geometry';
@@ -39,11 +39,51 @@ function evaluate(points: RoutePoint[], opts: Partial<Parameters<typeof evaluate
     weather: null,
     autoAerobar: false,
     keepPowerSteady: true,
+    heatEffect: false,
     urbanRanges: [],
     curvyRanges: [],
     ...opts,
   });
 }
+
+describe('heatPowerFactor (physiological derate)', () => {
+  it('applies no penalty at or below the 25 °C onset threshold', () => {
+    expect(heatPowerFactor(15)).toBe(1);
+    expect(heatPowerFactor(25)).toBe(1);
+  });
+
+  it('drops ~15% at 30 °C, the Périard meta-analysis anchor', () => {
+    expect(heatPowerFactor(30)).toBeCloseTo(0.85, 5);
+  });
+
+  it('floors at a 30% reduction from 35 °C upward', () => {
+    expect(heatPowerFactor(35)).toBeCloseTo(0.7, 5);
+    expect(heatPowerFactor(45)).toBeCloseTo(0.7, 5);
+  });
+
+  it('decreases monotonically with temperature', () => {
+    expect(heatPowerFactor(28)).toBeLessThan(heatPowerFactor(26));
+    expect(heatPowerFactor(32)).toBeLessThan(heatPowerFactor(28));
+  });
+});
+
+describe('heat effect on the ride', () => {
+  it('is slower in the heat than in the cool when enabled', () => {
+    const flat = straightRoute([0, 0, 0, 0, 0, 0], 0.5);
+    const cool = evaluate(flat, { heatEffect: true, overrides: { temperatureC: 15 } });
+    const hot = evaluate(flat, { heatEffect: true, overrides: { temperatureC: 35 } });
+    expect(hot.effectiveVelocityKph).toBeLessThan(cool.effectiveVelocityKph);
+    expect(hot.effectivePower).toBeLessThan(cool.effectivePower);
+  });
+
+  it('leaves a hot ride unchanged when the effect is disabled', () => {
+    const flat = straightRoute([0, 0, 0, 0, 0, 0], 0.5);
+    const off = evaluate(flat, { heatEffect: false, overrides: { temperatureC: 35 } });
+    const on = evaluate(flat, { heatEffect: true, overrides: { temperatureC: 35 } });
+    expect(on.effectivePower).toBeLessThan(off.effectivePower);
+    expect(on.effectiveVelocityKph).toBeLessThan(off.effectiveVelocityKph);
+  });
+});
 
 describe('per-segment integration', () => {
   it('takes longer on rolling terrain than a single solve at the average (flat) grade', () => {

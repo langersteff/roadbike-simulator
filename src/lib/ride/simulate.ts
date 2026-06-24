@@ -50,6 +50,16 @@ const POWER_MIN_FACTOR = 0;
 const RAIN_CRR_PER_MMH = 0.015;
 const RAIN_CRR_MAX_FACTOR = 1.30;
 
+// Physiological heat derate: above an onset threshold the rider must shed power to limit core
+// temperature, so sustainable output falls roughly linearly with ambient temperature until a
+// floor. Anchored to Périard et al. (Sports Med, PMC5198812): mean self-paced power in prolonged
+// time trials drops ~15% at ≥30 °C, with negligible loss below ~25 °C given a moving rider's
+// airflow. This is the rider's physiology and is separate from (and opposite to) the small
+// air-density speed gain that warm, thin air already produces in computeOutputs.
+const HEAT_POWER_THRESHOLD_C = 25;
+const HEAT_POWER_PER_C = 0.03;
+const HEAT_POWER_MAX_REDUCTION = 0.30;
+
 export function positionExplanation(chunk: Chunk, autoAerobar: boolean): string {
   if (chunk.overrides.position) {
     return `Manually overridden to ${chunk.overrides.position}.`;
@@ -93,6 +103,15 @@ export function powerFactorForGrade(gradePct: number): number {
 export function crrMultiplierForRain(precipitationMmH: number): number {
   if (!Number.isFinite(precipitationMmH) || precipitationMmH <= 0) return 1;
   return Math.min(RAIN_CRR_MAX_FACTOR, 1 + precipitationMmH * RAIN_CRR_PER_MMH);
+}
+
+export function heatPowerFactor(temperatureC: number): number {
+  if (!Number.isFinite(temperatureC) || temperatureC <= HEAT_POWER_THRESHOLD_C) return 1;
+  const reduction = Math.min(
+    HEAT_POWER_MAX_REDUCTION,
+    (temperatureC - HEAT_POWER_THRESHOLD_C) * HEAT_POWER_PER_C,
+  );
+  return 1 - reduction;
 }
 
 export function buildChunks(
@@ -337,6 +356,7 @@ interface ChunkPhysicsParams {
   crrMultiplier: number;
   weather: WeatherSample | null;
   keepPowerSteady: boolean;
+  heatEffect: boolean;
   gradeOverride?: number;
   powerOverride?: number;
   headwindOverrideKph?: number;
@@ -363,6 +383,8 @@ function integrateChunkPhysics(
   let distanceKm = 0;
   let powerDistance = 0;
 
+  const heatFactor = params.heatEffect ? heatPowerFactor(params.temperatureC) : 1;
+
   for (let index = range.startIndex; index < range.endIndex; index += 1) {
     const from = points[index];
     const to = points[index + 1];
@@ -375,10 +397,11 @@ function integrateChunkPhysics(
     const headwind = params.headwindOverrideKph ?? headwindKphFromWeather(params.weather, segBearing);
     const crosswind = crosswindKphFromWeather(params.weather, segBearing);
     const power =
-      params.powerOverride ??
-      (params.keepPowerSteady
-        ? params.profile.defaultPower
-        : params.profile.defaultPower * powerFactorForGrade(grade));
+      heatFactor *
+      (params.powerOverride ??
+        (params.keepPowerSteady
+          ? params.profile.defaultPower
+          : params.profile.defaultPower * powerFactorForGrade(grade)));
 
     const outputs = computeOutputs({
       id: 'segment',
@@ -430,6 +453,7 @@ interface BuildChunkOptions {
   weather: WeatherSample | null;
   autoAerobar: boolean;
   keepPowerSteady: boolean;
+  heatEffect: boolean;
   urbanRanges: UrbanRange[];
   curvyRanges: IndexRange[];
   surfaces?: Surface[];
@@ -444,6 +468,7 @@ export function evaluateChunk({
   weather,
   autoAerobar,
   keepPowerSteady,
+  heatEffect,
   urbanRanges,
   curvyRanges,
   surfaces,
@@ -488,6 +513,7 @@ export function evaluateChunk({
     crrMultiplier,
     weather,
     keepPowerSteady,
+    heatEffect,
     gradeOverride: overrides.gradePct,
     powerOverride: overrides.power,
     headwindOverrideKph: overrides.headwindKph,
@@ -540,6 +566,7 @@ interface SimulateOptions {
   weather: Array<WeatherSample | null>;
   autoAerobar: boolean;
   keepPowerSteady: boolean;
+  heatEffect: boolean;
   urbanRanges: UrbanRange[];
   curvyRanges: IndexRange[];
   surfaces?: Surface[];
@@ -553,6 +580,7 @@ export function simulate({
   weather,
   autoAerobar,
   keepPowerSteady,
+  heatEffect,
   urbanRanges,
   curvyRanges,
   surfaces,
@@ -567,6 +595,7 @@ export function simulate({
       weather: weather[index] ?? null,
       autoAerobar,
       keepPowerSteady,
+      heatEffect,
       urbanRanges,
       curvyRanges,
       surfaces,

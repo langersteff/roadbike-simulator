@@ -64,6 +64,7 @@ export interface RideSimulatorState {
   units: UnitSystem;
   autoAerobar?: boolean;
   keepPowerSteady?: boolean;
+  heatEffect?: boolean;
   urbanPlaces?: PlaceNode[];
   surfaces?: Surface[];
 }

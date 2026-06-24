@@ -68,6 +68,13 @@ const KEEP_POWER_TOOLTIP = [
   'When OFF (default): power scales with grade — higher on uphills, lower on downhills, matching a constant-effort rider.',
 ].join('\n');
 
+const HEAT_EFFECT_TOOLTIP = [
+  'When ON: models the physiological cost of heat. Above 25 °C the rider sheds power to limit',
+  'core temperature — about 3% per °C, ~15% at 30 °C, capped at 30% from 35 °C up',
+  '(Périard et al., Sports Med). Below 25 °C there is no penalty.',
+  'When OFF (default): only air density applies, so warmer (thinner) air reads slightly faster.',
+].join('\n');
+
 const AERO_RULES_TOOLTIP = [
   'Auto-pick aerobar when ALL of these hold for the chunk:',
   '• Length ≥ 0.5 km',
@@ -108,6 +115,7 @@ const initialState = (): RideSimulatorState => {
       },
       autoAerobar: stored.autoAerobar ?? false,
       keepPowerSteady: stored.keepPowerSteady ?? false,
+      heatEffect: stored.heatEffect ?? false,
     };
   }
   return {
@@ -120,6 +128,7 @@ const initialState = (): RideSimulatorState => {
     units: 'metric',
     autoAerobar: false,
     keepPowerSteady: false,
+    heatEffect: false,
   };
 };
 
@@ -249,6 +258,7 @@ export function RideSimulator() {
 
         const autoAerobar = state.autoAerobar ?? false;
         const keepPowerSteady = state.keepPowerSteady ?? false;
+        const heatEffect = state.heatEffect ?? false;
         const seedChunks = nextRanges.map((range, index) =>
           evaluateChunk({
             range,
@@ -259,6 +269,7 @@ export function RideSimulator() {
             weather: null,
             autoAerobar,
             keepPowerSteady,
+            heatEffect,
             urbanRanges: activeUrbanRanges,
             curvyRanges: activeCurvyRanges,
             surfaces: activeSurfaces,
@@ -297,6 +308,7 @@ export function RideSimulator() {
           weather: weatherResults,
           autoAerobar,
           keepPowerSteady,
+          heatEffect,
           urbanRanges: activeUrbanRanges,
           curvyRanges: activeCurvyRanges,
           surfaces: activeSurfaces,
@@ -321,6 +333,7 @@ export function RideSimulator() {
             weather: dedupe.weather,
             autoAerobar,
             keepPowerSteady,
+            heatEffect,
             urbanRanges: activeUrbanRanges,
             curvyRanges: activeCurvyRanges,
             surfaces: activeSurfaces,
@@ -341,7 +354,7 @@ export function RideSimulator() {
         setBusy(false);
       }
     },
-    [orientedPoints, overridesByChunk, state.profile, state.startDateTime, state.autoAerobar, state.keepPowerSteady, setUrbanPlaces],
+    [orientedPoints, overridesByChunk, state.profile, state.startDateTime, state.autoAerobar, state.keepPowerSteady, state.heatEffect, setUrbanPlaces],
   );
 
   const reSimulate = useCallback(
@@ -358,6 +371,7 @@ export function RideSimulator() {
         weather: nextWeather,
         autoAerobar: state.autoAerobar ?? false,
         keepPowerSteady: state.keepPowerSteady ?? false,
+        heatEffect: state.heatEffect ?? false,
         urbanRanges,
         curvyRanges,
         surfaces:
@@ -366,7 +380,7 @@ export function RideSimulator() {
       setState((prev) => ({ ...prev, chunks }));
       return chunks;
     },
-    [orientedPoints, state.profile, state.autoAerobar, state.keepPowerSteady, urbanRanges, curvyRanges],
+    [orientedPoints, state.profile, state.autoAerobar, state.keepPowerSteady, state.heatEffect, urbanRanges, curvyRanges],
   );
 
   const calculateSurfaceSpeeds = useCallback(async () => {
@@ -577,7 +591,7 @@ export function RideSimulator() {
       reSimulate(overridesByChunk, ranges, weatherByChunk);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.profile, state.autoAerobar, state.keepPowerSteady]);
+  }, [state.profile, state.autoAerobar, state.keepPowerSteady, state.heatEffect]);
 
   const handleOverrideChange = (chunkIndex: number, next: ChunkOverrides) => {
     const nextOverrides = { ...overridesByChunk, [chunkIndex]: next };
@@ -736,6 +750,35 @@ export function RideSimulator() {
           Keep power steady
           <InfoTooltip content={KEEP_POWER_TOOLTIP} label="How keep-power-steady works" />
         </label>
+        <label className="reverse-toggle">
+          <input
+            type="checkbox"
+            checked={state.heatEffect ?? false}
+            onChange={(event) =>
+              setState((prev) => ({ ...prev, heatEffect: event.target.checked }))
+            }
+          />
+          Simulate heat effect
+          <InfoTooltip content={HEAT_EFFECT_TOOLTIP} label="How the heat effect works" />
+        </label>
+        <label className="reverse-toggle">
+          <input
+            type="checkbox"
+            checked={hasSurfaces}
+            disabled={busy || orientedPoints.length < 2}
+            onChange={(event) => {
+              if (event.target.checked) void calculateSurfaceSpeeds();
+              else void clearSurfaceSpeeds();
+            }}
+          />
+          Surface-aware speeds
+          <InfoTooltip content={SURFACE_FEATURE_TOOLTIP} label="How surface speeds work" />
+        </label>
+        {surfaceStatus && (
+          <div className="ride-notice ride-notice--info">
+            <span>{surfaceStatus}</span>
+          </div>
+        )}
       </section>
 
       <section className="ride-section">
@@ -746,36 +789,6 @@ export function RideSimulator() {
           onApply={handleReSplit}
           busy={busy}
         />
-      </section>
-
-      <section className="ride-section">
-        <h2 className="ride-section__title">
-          Surface speeds
-          <InfoTooltip content={SURFACE_FEATURE_TOOLTIP} label="How surface speeds work" />
-        </h2>
-        <div className="ride-section__title-actions">
-          <button
-            type="button"
-            className="btn btn--ghost"
-            onClick={() => void calculateSurfaceSpeeds()}
-            disabled={busy || orientedPoints.length < 2}
-          >
-            Calculate surface speeds
-          </button>
-          <button
-            type="button"
-            className="btn btn--ghost"
-            onClick={() => void clearSurfaceSpeeds()}
-            disabled={busy || !hasSurfaces}
-          >
-            Clear surface speeds
-          </button>
-        </div>
-        {surfaceStatus && (
-          <div className="ride-notice ride-notice--info">
-            <span>{surfaceStatus}</span>
-          </div>
-        )}
       </section>
 
       {persistenceWarning && <div className="ride-notice ride-notice--warn">{persistenceWarning}</div>}
