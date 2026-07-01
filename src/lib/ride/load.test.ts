@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeLoadSummary } from './load';
+import { computeLoadSummary, cumulativeLoadByChunk, loadAtKm } from './load';
 import type { Chunk } from './types';
 
 function chunk(partial: Partial<Chunk>): Chunk {
@@ -44,5 +44,27 @@ describe('computeLoadSummary', () => {
     expect(summary.zoneMinutes.Z2).toBeCloseTo(20, 5);
     expect(summary.zoneMinutes.Z3).toBeCloseTo(10, 5);
     expect(summary.zoneMinutes.Z4).toBe(0);
+  });
+});
+
+describe('cumulativeLoadByChunk', () => {
+  const chunks = [
+    chunk({ startKm: 0, endKm: 20, lengthKm: 20, effectivePower: 200, durationMin: 40 }),
+    chunk({ startKm: 20, endKm: 40, lengthKm: 20, effectivePower: 280, durationMin: 40 }),
+  ];
+
+  it('is monotonic and ends at the ride total TSS', () => {
+    const byChunk = cumulativeLoadByChunk(chunks, 300);
+    const total = computeLoadSummary(chunks, 300).tss;
+    expect(byChunk[0].startTss).toBe(0);
+    expect(byChunk[1].endTss).toBeCloseTo(total, 5);
+    expect(byChunk[1].startTss).toBeGreaterThan(byChunk[0].startTss);
+  });
+
+  it('interpolates cumulative load within a chunk', () => {
+    const byChunk = cumulativeLoadByChunk(chunks, 300);
+    const midFirst = loadAtKm(10, chunks, byChunk);
+    expect(midFirst).toBeGreaterThan(byChunk[0].startTss);
+    expect(midFirst).toBeLessThan(byChunk[0].endTss);
   });
 });

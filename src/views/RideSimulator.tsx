@@ -878,7 +878,6 @@ export function RideSimulator() {
           startDateTime={state.startDateTime}
           daylightWindows={daylightWindows}
           ftpW={deriveFtpW(state.profile.baselinePower)}
-          riderWeightKg={state.profile.riderWeight}
           onHoverKm={setHoveredKm}
         />
       </section>

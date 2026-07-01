@@ -18,15 +18,58 @@ function emptyZoneMinutes(): Record<ZoneId, number> {
   }, {} as Record<ZoneId, number>);
 }
 
+function chunkMovingSeconds(chunk: Chunk): number {
+  const dwellMin = chunk.urban ? urbanStopPenaltyMin(chunk.lengthKm) : 0;
+  return Math.max(0, chunk.durationMin - dwellMin) * 60;
+}
+
+function tssFrom(fourthPowerTime: number, seconds: number, ftpW: number): number {
+  if (ftpW <= 0 || seconds <= 0) return 0;
+  const np = (fourthPowerTime / seconds) ** 0.25;
+  const intensityFactor = np / ftpW;
+  return (seconds * intensityFactor ** 2) / 36;
+}
+
+export interface ChunkLoad {
+  startTss: number;
+  endTss: number;
+}
+
+/** Cumulative training load (TSS) at each chunk's start and end, so the curve ends at the ride total. */
+export function cumulativeLoadByChunk(chunks: Chunk[], ftpW: number): ChunkLoad[] {
+  let seconds = 0;
+  let fourthPowerTime = 0;
+  return chunks.map((chunk) => {
+    const startTss = tssFrom(fourthPowerTime, seconds, ftpW);
+    const chunkSeconds = chunkMovingSeconds(chunk);
+    seconds += chunkSeconds;
+    fourthPowerTime += (chunk.powerFourthMean ?? chunk.effectivePower ** 4) * chunkSeconds;
+    const endTss = tssFrom(fourthPowerTime, seconds, ftpW);
+    return { startTss, endTss };
+  });
+}
+
+/** Cumulative TSS at a distance, interpolated within the chunk that km falls in. */
+export function loadAtKm(km: number, chunks: Chunk[], byChunk: ChunkLoad[]): number {
+  for (let index = 0; index < chunks.length; index += 1) {
+    const chunk = chunks[index];
+    if (km <= chunk.endKm || index === chunks.length - 1) {
+      const span = chunk.lengthKm || 1;
+      const within = Math.min(1, Math.max(0, (km - chunk.startKm) / span));
+      const { startTss, endTss } = byChunk[index];
+      return startTss + (endTss - startTss) * within;
+    }
+  }
+  return 0;
+}
+
 export function computeLoadSummary(chunks: Chunk[], ftpW: number): LoadSummary {
   const zoneMinutes = emptyZoneMinutes();
   let movingSeconds = 0;
   let weightedFourthPower = 0;
 
   for (const chunk of chunks) {
-    const dwellMin = chunk.urban ? urbanStopPenaltyMin(chunk.lengthKm) : 0;
-    const movingMin = Math.max(0, chunk.durationMin - dwellMin);
-    const seconds = movingMin * 60;
+    const seconds = chunkMovingSeconds(chunk);
     if (seconds <= 0) continue;
 
     movingSeconds += seconds;
@@ -35,7 +78,7 @@ export function computeLoadSummary(chunks: Chunk[], ftpW: number): LoadSummary {
     const fourthPower = chunk.powerFourthMean ?? chunk.effectivePower ** 4;
     weightedFourthPower += fourthPower * seconds;
     if (ftpW > 0) {
-      zoneMinutes[zoneForFraction(chunk.effectivePower / ftpW)] += movingMin;
+      zoneMinutes[zoneForFraction(chunk.effectivePower / ftpW)] += seconds / 60;
     }
   }
 
