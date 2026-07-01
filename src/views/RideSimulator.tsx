@@ -822,6 +822,7 @@ export function RideSimulator() {
             tuning={getTuning()}
             minSectionKm={state.split.minSectionKm}
             maxSectionKm={state.split.maxSectionKm}
+            rideProfile={state.rideProfile ?? 'endurance'}
             onChange={handleLiveTuning}
             onClose={() => setTuningOpen(false)}
           />

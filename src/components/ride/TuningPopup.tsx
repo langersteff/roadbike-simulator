@@ -2,18 +2,27 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { DEFAULT_TUNING, TUNING_KNOBS, type TuningConfig } from '../../lib/tuning';
 import { DEFAULT_SPLIT_CONFIG } from '../../lib/chunking/strategies';
+import type { RideProfileId } from '../../lib/ride/zones';
 
 interface TuningPopupProps {
   tuning: TuningConfig;
   minSectionKm: number;
   maxSectionKm: number;
+  rideProfile: RideProfileId;
   onChange: (tuning: TuningConfig, minSectionKm: number, maxSectionKm: number) => void;
   onClose: () => void;
 }
 
 const GROUPS: Array<'Detection' | 'Aerobar gate' | 'Ride effort'> = ['Detection', 'Aerobar gate', 'Ride effort'];
 
-export function TuningPopup({ tuning, minSectionKm, maxSectionKm, onChange, onClose }: TuningPopupProps) {
+// Ride-effort shows only the cruise knob for the currently-selected profile.
+const CRUISE_KEY: Record<RideProfileId, keyof TuningConfig> = {
+  endurance: 'enduranceCruise',
+  tempo: 'tempoCruise',
+  hiit: 'hiitCruise',
+};
+
+export function TuningPopup({ tuning, minSectionKm, maxSectionKm, rideProfile, onChange, onClose }: TuningPopupProps) {
   const [draft, setDraft] = useState<TuningConfig>(tuning);
   const [draftMin, setDraftMin] = useState(minSectionKm);
   const [draftMax, setDraftMax] = useState(maxSectionKm);
@@ -54,13 +63,17 @@ export function TuningPopup({ tuning, minSectionKm, maxSectionKm, onChange, onCl
         {GROUPS.map((group) => (
           <div key={group} className="tuning-group">
             <h4 className="tuning-group__title">{group}</h4>
-            {TUNING_KNOBS.filter((knob) => knob.group === group).map((knob) => {
+            {TUNING_KNOBS.filter(
+              (knob) =>
+                knob.group === group &&
+                (group !== 'Ride effort' || knob.key === CRUISE_KEY[rideProfile]),
+            ).map((knob) => {
               const toDisplay = knob.toDisplay ?? ((value: number) => value);
               const fromDisplay = knob.fromDisplay ?? ((value: number) => value);
               return (
                 <KnobRow
                   key={knob.key}
-                  label={knob.label}
+                  label={group === 'Ride effort' ? 'Base Effort (% FTP)' : knob.label}
                   help={knob.help}
                   min={knob.min}
                   max={knob.max}
