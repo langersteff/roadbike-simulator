@@ -44,6 +44,7 @@ export interface Chunk {
   weather: WeatherSample | null;
   overrides: ChunkOverrides;
   effectivePower: number;
+  powerFourthMean?: number;
   effectivePosition: Position;
   effectiveHeadwindKph: number;
   effectiveTemperatureC: number;

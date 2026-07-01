@@ -367,6 +367,10 @@ interface ChunkPhysicsResult {
   movingTimeMin: number;
   avgVelocityKph: number;
   avgPowerW: number;
+  // Time-weighted mean of power⁴ across the chunk's segments. Kept separate from avgPowerW so the
+  // load model can build a Normalized Power that reflects within-chunk variability (climbs spike,
+  // descents coast) instead of collapsing each chunk to a single flat power.
+  powerFourthMean: number;
 }
 
 /**
@@ -383,6 +387,7 @@ function integrateChunkPhysics(
   let movingTimeMin = 0;
   let distanceKm = 0;
   let powerDistance = 0;
+  let powerFourthTime = 0;
 
   const heatFactor = params.heatEffect ? heatPowerFactor(params.temperatureC) : 1;
 
@@ -434,13 +439,18 @@ function integrateChunkPhysics(
     const velocityKph = cappedVelocityKph(outputs.velocityKph, turnRadiusM(points, index, segM));
     if (velocityKph <= 0) continue;
 
+    const segSeconds = (segKm / velocityKph) * 3600;
     movingTimeMin += (segKm / velocityKph) * 60;
     distanceKm += segKm;
     powerDistance += power * segKm;
+    powerFourthTime += power ** 4 * segSeconds;
   }
+
+  const movingSeconds = movingTimeMin * 60;
 
   return {
     movingTimeMin,
+    powerFourthMean: movingSeconds > 0 ? powerFourthTime / movingSeconds : 0,
     avgVelocityKph: movingTimeMin > 0 ? distanceKm / (movingTimeMin / 60) : 0,
     avgPowerW: distanceKm > 0 ? powerDistance / distanceKm : params.profile.baselinePower,
   };
@@ -548,6 +558,7 @@ export function evaluateChunk({
     weather,
     overrides,
     effectivePower: physics.avgPowerW,
+    powerFourthMean: physics.powerFourthMean,
     effectivePosition,
     effectiveHeadwindKph: effectiveHeadwind,
     effectiveTemperatureC: effectiveTemperature,

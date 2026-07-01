@@ -286,4 +286,17 @@ describe('profile-driven effort model', () => {
     const hiitChunk = evaluate(climb, { keepPowerSteady: false, rideProfile: 'hiit' });
     expect(hiitChunk.effectivePower).toBeGreaterThan(enduranceChunk.effectivePower);
   });
+
+  it('powerFourthMean yields a normalized power above average on rolling terrain', () => {
+    const rolling = straightRoute([0, 0, 0, 120], 1);
+    const chunk = evaluate(rolling, { keepPowerSteady: false, rideProfile: 'hiit' });
+    const normalizedPower = chunk.powerFourthMean! ** 0.25;
+    expect(normalizedPower).toBeGreaterThan(chunk.effectivePower);
+  });
+
+  it('powerFourthMean equals flat power on constant-grade terrain', () => {
+    const flat = straightRoute([100, 100], 1);
+    const chunk = evaluate(flat, { keepPowerSteady: false, rideProfile: 'endurance' });
+    expect(chunk.powerFourthMean! ** 0.25).toBeCloseTo(chunk.effectivePower, 0);
+  });
 });

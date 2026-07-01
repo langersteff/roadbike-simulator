@@ -30,7 +30,10 @@ export function computeLoadSummary(chunks: Chunk[], ftpW: number): LoadSummary {
     if (seconds <= 0) continue;
 
     movingSeconds += seconds;
-    weightedFourthPower += chunk.effectivePower ** 4 * seconds;
+    // Prefer the chunk's time-weighted mean of power⁴ (captures within-chunk variability); fall
+    // back to the flat chunk power for state persisted before that field existed.
+    const fourthPower = chunk.powerFourthMean ?? chunk.effectivePower ** 4;
+    weightedFourthPower += fourthPower * seconds;
     if (ftpW > 0) {
       zoneMinutes[zoneForFraction(chunk.effectivePower / ftpW)] += movingMin;
     }
