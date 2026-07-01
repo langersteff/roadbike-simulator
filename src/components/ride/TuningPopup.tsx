@@ -73,7 +73,7 @@ export function TuningPopup({ tuning, minSectionKm, maxSectionKm, rideProfile, o
               return (
                 <KnobRow
                   key={knob.key}
-                  label={group === 'Ride effort' ? 'Base Effort (% FTP)' : knob.label}
+                  label={group === 'Ride effort' ? 'Cruise Effort (% FTP)' : knob.label}
                   help={knob.help}
                   min={knob.min}
                   max={knob.max}

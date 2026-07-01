@@ -55,6 +55,18 @@ const WIND_POWER_PER_KPH = 0.012;
 const WIND_POWER_MAX_FACTOR = 1.5;
 const CROSSWIND_EFFORT_WEIGHT = 0.5;
 
+// Climbing forces a minimum intensity that is independent of how easily the rider spins on the
+// flat: gravity sets the floor, not the cruise effort. This grade→%FTP "climb demand" is the floor
+// the rider is pushed to on an ascent; effort is the max of it and the (cruise-based) flat effort,
+// then capped by the profile ceiling. Anchored so a ~3% grade already reaches Zone 3.
+const CLIMB_DEMAND_BASE = 0.62;
+const CLIMB_DEMAND_PER_PERCENT = 0.045;
+
+export function climbDemandFraction(gradePct: number): number {
+  if (gradePct <= 0) return 0;
+  return CLIMB_DEMAND_BASE + gradePct * CLIMB_DEMAND_PER_PERCENT;
+}
+
 const RAIN_CRR_PER_MMH = 0.015;
 const RAIN_CRR_MAX_FACTOR = 1.30;
 
@@ -427,9 +439,13 @@ function integrateChunkPhysics(
     const ftpW = deriveFtpW(params.profile.baselinePower);
     const spec = RIDE_PROFILES[params.rideProfile];
     const cruiseFraction = cruiseFractionFor(params.rideProfile);
+    // Flat/descent effort comes from cruise (descents taper toward coasting); climbs are driven by
+    // the grade-forced demand instead. The rider does whichever is harder, capped by the profile.
+    const descentTaper = grade < 0 ? powerFactorForGrade(grade) : 1;
+    const baseEffort = cruiseFraction * descentTaper;
     const effortFraction = Math.min(
-      cruiseFraction * powerFactorForGrade(grade) * windPowerFactor(headwind, crosswind),
       spec.ceilingFraction,
+      Math.max(baseEffort, climbDemandFraction(grade)) * windPowerFactor(headwind, crosswind),
     );
     const power =
       heatFactor *

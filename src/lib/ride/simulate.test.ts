@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildChunks, evaluateChunk, heatPowerFactor, windPowerFactor } from './simulate';
+import { buildChunks, evaluateChunk, heatPowerFactor, windPowerFactor, climbDemandFraction } from './simulate';
 import { RIDE_PROFILES, deriveFtpW } from './zones';
 import { headwindKphFromWeather } from './wind';
 import { computeCurvyRanges, type SplitConfig } from '../chunking/strategies';
@@ -314,6 +314,21 @@ describe('windPowerFactor', () => {
 
   it('caps the wind-driven bump', () => {
     expect(windPowerFactor(100, 0)).toBeCloseTo(1.5, 5);
+  });
+});
+
+describe('climb demand (decoupled from cruise)', () => {
+  it('is zero on flat/descent and rises with grade', () => {
+    expect(climbDemandFraction(0)).toBe(0);
+    expect(climbDemandFraction(-5)).toBe(0);
+    expect(climbDemandFraction(4)).toBeCloseTo(0.8, 5);
+  });
+
+  it('a moderate climb is driven by grade demand, not the cruise fraction', () => {
+    const climb4 = straightRoute([0, 40], 1); // 4% grade
+    const chunk = evaluate(climb4, { keepPowerSteady: false, rideProfile: 'endurance' });
+    const expected = deriveFtpW(200) * climbDemandFraction(4);
+    expect(chunk.effectivePower).toBeCloseTo(expected, 0);
   });
 });
 
