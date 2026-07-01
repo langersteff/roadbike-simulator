@@ -133,8 +133,13 @@ function KnobRow({ label, help, min, max, step, value, onChange }: KnobRowProps)
         step={step}
         value={value}
         onChange={(event) => {
+          if (event.target.value === '') return;
           const next = Number(event.target.value);
-          if (!Number.isNaN(next)) onChange(clamp(next));
+          if (!Number.isNaN(next)) onChange(next);
+        }}
+        onBlur={(event) => {
+          const next = Number(event.target.value);
+          onChange(event.target.value === '' || Number.isNaN(next) ? value : clamp(next));
         }}
       />
     </div>
