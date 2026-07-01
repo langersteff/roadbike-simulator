@@ -95,5 +95,5 @@ export const DESCENT_MAX_KPH = 80;
 
 // Urban riding loses time at lights/junctions that the steady-state balance never sees.
 export const URBAN_STOPS_PER_KM = 1.2;
-export const STOP_DWELL_S = 120;
-export const STOP_ACCEL_PENALTY_S = 60;
+export const STOP_DWELL_S = 12;
+export const STOP_ACCEL_PENALTY_S = 6;

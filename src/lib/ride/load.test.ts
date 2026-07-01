@@ -27,8 +27,8 @@ describe('computeLoadSummary', () => {
   it('excludes urban stop-dwell time from moving seconds', () => {
     const urbanChunk = chunk({ urban: true, lengthKm: 10, durationMin: 60, effectivePower: 300 });
     const summary = computeLoadSummary([urbanChunk], 300);
-    // URBAN_STOPS_PER_KM 1.2 × 10 km × (12+6)s/60 = 36 min of dwell removed.
-    expect(summary.movingSeconds).toBeCloseTo((60 - 36) * 60, 1);
+    // URBAN_STOPS_PER_KM 1.2 × 10 km × (12+6)s/60 = 3.6 min of dwell removed.
+    expect(summary.movingSeconds).toBeCloseTo((60 - 3.6) * 60, 1);
   });
 
   it('accumulates minutes into the correct zones', () => {
