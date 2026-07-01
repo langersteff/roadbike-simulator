@@ -41,7 +41,7 @@ export function ChunkPopup({ chunk, profile, units, autoAerobar, onChange }: Chu
           <NumberInputRow
             label="Power"
             unitSuffix="W"
-            value={powerOverridden ? overrides.power! : profile.defaultPower}
+            value={powerOverridden ? overrides.power! : profile.baselinePower}
             decimals={0}
             highlighted={powerOverridden}
             onChange={(next) => onChange(setPowerOverride(overrides, next))}

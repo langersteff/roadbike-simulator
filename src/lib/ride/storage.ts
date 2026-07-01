@@ -1,8 +1,8 @@
-import type { RideSimulatorState } from './types';
+import type { RideSimulatorState, RiderProfile } from './types';
 import { readJson, removeKey } from '../persist';
 
-const STORAGE_KEY = 'bikecalc.rideSimulator.v2';
-const LEGACY_STORAGE_KEYS = ['bikecalc.rideSimulator.v1'];
+const STORAGE_KEY = 'bikecalc.rideSimulator.v3';
+const LEGACY_STORAGE_KEYS = ['bikecalc.rideSimulator.v1', 'bikecalc.rideSimulator.v2'];
 const MAX_SERIALIZED_BYTES = 2 * 1024 * 1024;
 
 export interface SaveOutcome {
@@ -24,20 +24,23 @@ function isValidState(value: unknown): value is RideSimulatorState {
 }
 
 export function loadRideState(): RideSimulatorState | null {
+  const legacyRaw = LEGACY_STORAGE_KEYS.map((key) => readJson<unknown>(key)).find(Boolean) ?? null;
   LEGACY_STORAGE_KEYS.forEach(removeKey);
-  const parsed = readJson<unknown>(STORAGE_KEY);
+  const parsed = readJson<unknown>(STORAGE_KEY) ?? legacyRaw;
   if (parsed === null) return null;
   if (!isValidState(parsed)) {
     removeKey(STORAGE_KEY);
     return null;
   }
-  return migrateLegacyTire(parsed);
+  return migrateLegacyState(parsed as RideSimulatorState);
 }
 
-function migrateLegacyTire(state: RideSimulatorState): RideSimulatorState {
-  const profileTire = state.profile.tire as string;
-  const profile = profileTire === 'tubular' ? { ...state.profile, tire: 'clincher' as const } : state.profile;
-  return { ...state, profile };
+function migrateLegacyState(state: RideSimulatorState): RideSimulatorState {
+  const rawProfile = state.profile as RiderProfile & { defaultPower?: number };
+  const baselinePower = rawProfile.baselinePower ?? rawProfile.defaultPower ?? 200;
+  const tire = (rawProfile.tire as string) === 'tubular' ? 'clincher' : rawProfile.tire;
+  const { defaultPower: _legacyPower, ...rest } = rawProfile;
+  return { ...state, profile: { ...rest, tire, baselinePower } };
 }
 
 export function saveRideState(state: RideSimulatorState): SaveOutcome {

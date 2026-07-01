@@ -137,7 +137,7 @@ export function ChunkRow({
             <OverrideRow
               label="Power"
               suffix="W"
-              defaultValue={profile.defaultPower}
+              defaultValue={profile.baselinePower}
               overrideValue={overrides.power}
               decimals={0}
               onSet={(next) => patch({ power: next })}

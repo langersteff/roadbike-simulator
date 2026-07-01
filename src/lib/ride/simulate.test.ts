@@ -14,7 +14,7 @@ const PROFILE: RiderProfile = {
   bikeWeight: 9,
   bodyHeightCm: 175,
   tire: 'clincher',
-  defaultPower: 200,
+  baselinePower: 200,
   defaultPosition: 'hoods',
 };
 
@@ -96,7 +96,7 @@ describe('per-segment integration', () => {
       id: 'flat',
       label: 'flat',
       mode: 'power',
-      power: PROFILE.defaultPower,
+      power: PROFILE.baselinePower,
       velocity: 0,
       riderWeight: PROFILE.riderWeight,
       bikeWeight: PROFILE.bikeWeight,

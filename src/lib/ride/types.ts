@@ -3,6 +3,7 @@ import type { RoutePoint } from '../gpx/parse';
 import type { WeatherSample } from '../weather/openMeteo';
 import type { SplitConfig } from '../chunking/strategies';
 import type { PlaceNode } from '../osm/overpass';
+import type { RideProfileId } from './zones';
 
 export type ColorScale = 'speed' | 'grade' | 'aerobar' | 'curvy';
 
@@ -11,7 +12,7 @@ export interface RiderProfile {
   bikeWeight: number;
   bodyHeightCm: number;
   tire: Tire;
-  defaultPower: number;
+  baselinePower: number;
   defaultPosition: Position;
 }
 
@@ -65,6 +66,7 @@ export interface RideSimulatorState {
   autoAerobar?: boolean;
   keepPowerSteady?: boolean;
   heatEffect?: boolean;
+  rideProfile?: RideProfileId;
   urbanPlaces?: PlaceNode[];
   surfaces?: Surface[];
 }

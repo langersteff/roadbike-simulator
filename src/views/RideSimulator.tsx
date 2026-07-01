@@ -55,7 +55,7 @@ const DEFAULT_PROFILE: RiderProfile = {
   bikeWeight: 9,
   bodyHeightCm: 175,
   tire: 'clincher',
-  defaultPower: 200,
+  baselinePower: 200,
   defaultPosition: 'hoods',
 };
 

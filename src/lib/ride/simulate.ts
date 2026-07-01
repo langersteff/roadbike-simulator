@@ -400,8 +400,8 @@ function integrateChunkPhysics(
       heatFactor *
       (params.powerOverride ??
         (params.keepPowerSteady
-          ? params.profile.defaultPower
-          : params.profile.defaultPower * powerFactorForGrade(grade)));
+          ? params.profile.baselinePower
+          : params.profile.baselinePower * powerFactorForGrade(grade)));
 
     const outputs = computeOutputs({
       id: 'segment',
@@ -435,7 +435,7 @@ function integrateChunkPhysics(
   return {
     movingTimeMin,
     avgVelocityKph: movingTimeMin > 0 ? distanceKm / (movingTimeMin / 60) : 0,
-    avgPowerW: distanceKm > 0 ? powerDistance / distanceKm : params.profile.defaultPower,
+    avgPowerW: distanceKm > 0 ? powerDistance / distanceKm : params.profile.baselinePower,
   };
 }
 

@@ -64,9 +64,9 @@ export function RiderProfileForm({ profile, units, onChange }: RiderProfileFormP
       <NumberInputRow
         label="Default power"
         unitSuffix="W"
-        value={profile.defaultPower}
+        value={profile.baselinePower}
         decimals={0}
-        onChange={(power) => patch({ defaultPower: power })}
+        onChange={(power) => patch({ baselinePower: power })}
       />
       <SelectInputRow
         label="Default position"
