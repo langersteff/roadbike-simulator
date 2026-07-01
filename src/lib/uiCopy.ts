@@ -30,3 +30,17 @@ export function formatMinutes(min: number): string {
 export const SUMMARY_EMPTY = 'Upload a GPX file to see distance, elevation, duration and arrival time.';
 export const CHUNKS_EMPTY = 'Upload a GPX file to generate per-chunk plans you can edit and override.';
 export const VELOCITY_EMPTY = 'Velocity chart appears here once a route is loaded.';
+
+export const BASELINE_POWER_TOOLTIP = [
+  'Your steady, all-day effort — the power you could hold on flat ground for hours.',
+  'Treated as mid-Zone-2 (65% of FTP); the simulator estimates FTP and training zones from it.',
+].join('\n');
+
+export const RIDE_PROFILE_TOOLTIP = [
+  'How hard the rider works on this route:',
+  '• Endurance — easy flats, climbs no harder than Tempo (Z3).',
+  '• Tempo — flats at Tempo, climbs up to Threshold (Z4).',
+  '• High intensity — easy flats, climbs attacked into VO2max (Z5).',
+].join('\n');
+
+export const RIDE_LOAD_CAVEAT = 'Training load is estimated from modelled effort, not measured power.';

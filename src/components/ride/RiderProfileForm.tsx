@@ -10,7 +10,8 @@ import {
 import { NumberInputRow, SelectInputRow } from '../InputRow';
 import type { RiderProfile } from '../../lib/ride/types';
 import type { Position, Tire } from '../../types';
-import { TIRE_TOOLTIP } from '../../lib/uiCopy';
+import { deriveFtpW } from '../../lib/ride/zones';
+import { BASELINE_POWER_TOOLTIP, TIRE_TOOLTIP } from '../../lib/uiCopy';
 
 const TIRE_OPTIONS = (Object.keys(TIRE_LABELS) as Tire[]).map((value) => ({
   value,
@@ -62,12 +63,17 @@ export function RiderProfileForm({ profile, units, onChange }: RiderProfileFormP
         onChange={(tire) => patch({ tire })}
       />
       <NumberInputRow
-        label="Default power"
+        label="Baseline power"
         unitSuffix="W"
         value={profile.baselinePower}
         decimals={0}
+        tooltip={BASELINE_POWER_TOOLTIP}
         onChange={(power) => patch({ baselinePower: power })}
       />
+      <p className="profile-form__note">
+        Estimated FTP ≈ {Math.round(deriveFtpW(profile.baselinePower))} W — baseline treated as
+        mid-Zone-2 (65%).
+      </p>
       <SelectInputRow
         label="Default position"
         value={profile.defaultPosition}

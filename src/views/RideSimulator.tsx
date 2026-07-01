@@ -39,6 +39,7 @@ import { loadRideState, saveRideState } from '../lib/ride/storage';
 import type { Surface, UnitSystem } from '../types';
 import { GpxUpload } from '../components/ride/GpxUpload';
 import { RiderProfileForm } from '../components/ride/RiderProfileForm';
+import { RideProfilePicker } from '../components/ride/RideProfilePicker';
 import { StartTimeInput } from '../components/ride/StartTimeInput';
 import { SplitStrategyPicker } from '../components/ride/SplitStrategyPicker';
 import { TuningPopup } from '../components/ride/TuningPopup';
@@ -732,6 +733,10 @@ export function RideSimulator() {
       <section className="ride-section">
         <h2 className="ride-section__title">Rider profile</h2>
         <RiderProfileForm profile={state.profile} units={state.units} onChange={handleProfileChange} />
+        <RideProfilePicker
+          value={state.rideProfile ?? 'endurance'}
+          onChange={(rideProfile) => setState((prev) => ({ ...prev, rideProfile }))}
+        />
         <label className="reverse-toggle">
           <input
             type="checkbox"
