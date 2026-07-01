@@ -268,10 +268,11 @@ describe('profile-driven effort model', () => {
   // 15% climb, 1 km segment — steep enough that endurance hits its ceiling while hiit has room above it.
   const climb = straightRoute([0, 150], 1);
 
-  it('endurance flat effort equals baseline power', () => {
+  it('endurance flat effort sits at the profile cruise fraction of FTP', () => {
     const flat = straightRoute([100, 100], 1);
     const chunk = evaluate(flat, { keepPowerSteady: false, rideProfile: 'endurance' });
-    expect(chunk.effectivePower).toBeCloseTo(200, 0);
+    const cruiseW = deriveFtpW(200) * RIDE_PROFILES.endurance.cruiseFraction;
+    expect(chunk.effectivePower).toBeCloseTo(cruiseW, 0);
   });
 
   it('endurance clamps a steep climb to the Z3 ceiling (90% FTP)', () => {

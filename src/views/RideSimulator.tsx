@@ -47,6 +47,7 @@ import { TuningPopup } from '../components/ride/TuningPopup';
 import { RouteMap, type JumpRequest } from '../components/ride/RouteMap';
 import { VelocityChart } from '../components/ride/VelocityChart';
 import { ColorScaleToggle } from '../components/ride/ColorScaleToggle';
+import { ZoneLegend } from '../components/ride/ZoneLegend';
 import { RouteSummary } from '../components/ride/RouteSummary';
 import { ChunkList } from '../components/ride/ChunkList';
 import { InfoTooltip } from '../components/InfoTooltip';
@@ -839,7 +840,7 @@ export function RideSimulator() {
         <div className="ride-section__title-row">
           <h2 className="ride-section__title">Route</h2>
           <div className="ride-section__title-actions">
-            <ColorScaleToggle value={effectiveColorScale} onChange={setColorScale} curvyEnabled={state.split.curvy} />
+            <ColorScaleToggle value={effectiveColorScale} onChange={setColorScale} />
             <button type="button" className="btn btn--ghost" onClick={() => setTuningOpen((open) => !open)}>
               Tune…
             </button>
@@ -866,6 +867,7 @@ export function RideSimulator() {
           jumpRequest={jumpRequest}
           onChunkOverrideChange={handleOverrideChange}
         />
+        {effectiveColorScale === 'zone' && <ZoneLegend />}
       </section>
 
       <section className="ride-section">

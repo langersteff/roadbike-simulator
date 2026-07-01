@@ -18,6 +18,7 @@ import type { Chunk } from '../../lib/ride/types';
 import type { DaylightWindow } from '../../lib/weather/openMeteo';
 import { crosswindKphFromWeather, headwindKphFromWeather } from '../../lib/ride/wind';
 import { zoneForFraction, ZONE_META } from '../../lib/ride/zones';
+import { ZoneLegend } from './ZoneLegend';
 import { formatMinutes, VELOCITY_EMPTY } from '../../lib/uiCopy';
 
 interface VelocityChartProps {
@@ -493,6 +494,7 @@ export function VelocityChart({ chunks, routePoints, startDateTime, daylightWind
           )}
         </ComposedChart>
       </ResponsiveContainer>
+      {showZones && <ZoneLegend />}
     </div>
   );
 }
