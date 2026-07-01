@@ -259,10 +259,10 @@ export function VelocityChart({
   );
   const bands = useMemo(() => zoneBands(chunks, ftpW), [chunks, ftpW]);
   const chartData = useMemo(() => {
-    if (!showLoad || ftpW <= 0) return data;
+    if (ftpW <= 0) return data;
     const byChunk = cumulativeLoadByChunk(chunks, ftpW);
     return data.map((point) => ({ ...point, load: loadAtKm(point.km, chunks, byChunk) }));
-  }, [data, showLoad, chunks, ftpW]);
+  }, [data, chunks, ftpW]);
 
   if (chunks.length === 0) {
     return <div className="velocity-chart velocity-chart--empty">{VELOCITY_EMPTY}</div>;
@@ -346,14 +346,13 @@ export function VelocityChart({
             bands.map((band, index) => (
               <ReferenceArea
                 key={index}
-                yAxisId="zoneband"
-                y1={0}
-                y2={1}
+                yAxisId="speed"
                 x1={band.startKm}
                 x2={band.endKm}
                 fill={band.color}
                 fillOpacity={0.22}
                 stroke="none"
+                ifOverflow="extendDomain"
               />
             ))}
           <XAxis
@@ -431,14 +430,6 @@ export function VelocityChart({
             stroke={LOAD_COLOR}
             tickLine={false}
             hide={!showLoad}
-          />
-          <YAxis
-            yAxisId="zoneband"
-            domain={[0, 1]}
-            width={0}
-            tick={false}
-            axisLine={false}
-            tickLine={false}
           />
           <Tooltip
             content={
