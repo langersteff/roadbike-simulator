@@ -124,7 +124,7 @@ function nearestRouteIndex(points: RoutePoint[], km: number): number {
   return Math.abs(points[lo].cumKm - km) <= Math.abs(points[hi].cumKm - km) ? lo : hi;
 }
 
-function localBearingAtKm(points: RoutePoint[], km: number, windowKm = 0.2): number {
+function localBearingAtKm(points: RoutePoint[], km: number, windowKm = SAMPLE_STEP_KM): number {
   if (points.length < 2) return 0;
   const lookbehind = locationAtKm(points, Math.max(0, km - windowKm / 2));
   const lookahead = locationAtKm(points, km + windowKm / 2);

@@ -123,8 +123,9 @@ interface LatLon {
 
 /** Point-to-segment distance (km) via a local equirectangular projection — exact enough at road scale. */
 function pointToSegmentKm(point: LatLon, start: LatLon, end: LatLon): number {
+  // Mean length of one degree of latitude on the WGS-84 ellipsoid; longitude shrinks by cos(lat).
   const metersPerDegLat = 111_320;
-  const metersPerDegLon = 111_320 * Math.cos(toRad((start.lat + end.lat) / 2));
+  const metersPerDegLon = metersPerDegLat * Math.cos(toRad((start.lat + end.lat) / 2));
   const segX = (end.lon - start.lon) * metersPerDegLon;
   const segY = (end.lat - start.lat) * metersPerDegLat;
   const pointX = (point.lon - start.lon) * metersPerDegLon;

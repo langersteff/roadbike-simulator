@@ -44,6 +44,8 @@ export interface Chunk {
   weather: WeatherSample | null;
   overrides: ChunkOverrides;
   effectivePower: number;
+  // Optional only for pre-v3 chunks loaded from storage, which predate these fields; freshly
+  // simulated chunks always set them. Consumers fall back when they are absent.
   powerFourthMean?: number;
   zoneSeconds?: Partial<Record<ZoneId, number>>;
   effectivePosition: Position;

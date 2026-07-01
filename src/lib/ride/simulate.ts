@@ -63,11 +63,7 @@ const CROSSWIND_EFFORT_WEIGHT = 0.5;
 const CLIMB_DEMAND_BASE = 0.62;
 
 function climbRiseFor(rideProfile: RideProfileId): number {
-  const tuning = getTuning();
-  if (rideProfile === 'easyEndurance') return tuning.easyEnduranceClimbRise;
-  if (rideProfile === 'endurance') return tuning.enduranceClimbRise;
-  if (rideProfile === 'tempo') return tuning.tempoClimbRise;
-  return tuning.hiitClimbRise;
+  return getTuning()[`${rideProfile}ClimbRise`];
 }
 
 export function climbDemandFraction(gradePct: number, rideProfile: RideProfileId): number {
@@ -136,11 +132,7 @@ export function windPowerFactor(headwindKph: number, crosswindKph: number): numb
 
 /** Flat-ground effort fraction for the profile, read live from tuning so the popup can adjust it. */
 function cruiseFractionFor(rideProfile: RideProfileId): number {
-  const tuning = getTuning();
-  if (rideProfile === 'easyEndurance') return tuning.easyEnduranceCruise;
-  if (rideProfile === 'endurance') return tuning.enduranceCruise;
-  if (rideProfile === 'tempo') return tuning.tempoCruise;
-  return tuning.hiitCruise;
+  return getTuning()[`${rideProfile}Cruise`];
 }
 
 export function crrMultiplierForRain(precipitationMmH: number): number {

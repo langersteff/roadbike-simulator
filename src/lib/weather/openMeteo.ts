@@ -40,7 +40,7 @@ const WEATHER_CACHE_KEY = 'bikecalc.weatherCache.v2';
 const DAYLIGHT_CACHE_KEY = 'bikecalc.daylightCache.v1';
 const WEATHER_CACHE_LIMIT = 500;
 const DAYLIGHT_CACHE_LIMIT = 100;
-const WEATHER_CACHE_TTL_MS = 3 * 60 * 60 * 1000;
+const WEATHER_CACHE_TTL_MS = 3 * 60 * 60 * 1000; // 3 hours
 
 interface CachedWeather {
   sample: WeatherSample;

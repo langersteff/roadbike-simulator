@@ -135,10 +135,13 @@ export function locationAtKm<T extends LatLon & { cumKm: number }>(points: T[], 
     if (points[mid].cumKm <= km) lo = mid;
     else hi = mid;
   }
-  const a = points[lo];
-  const b = points[hi];
-  const span = b.cumKm - a.cumKm;
-  if (span <= 0) return { lat: a.lat, lon: a.lon };
-  const t = (km - a.cumKm) / span;
-  return { lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t };
+  const loPoint = points[lo];
+  const hiPoint = points[hi];
+  const span = hiPoint.cumKm - loPoint.cumKm;
+  if (span <= 0) return { lat: loPoint.lat, lon: loPoint.lon };
+  const t = (km - loPoint.cumKm) / span;
+  return {
+    lat: loPoint.lat + (hiPoint.lat - loPoint.lat) * t,
+    lon: loPoint.lon + (hiPoint.lon - loPoint.lon) * t,
+  };
 }
