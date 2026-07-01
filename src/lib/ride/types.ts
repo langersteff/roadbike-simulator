@@ -3,7 +3,7 @@ import type { RoutePoint } from '../gpx/parse';
 import type { WeatherSample } from '../weather/openMeteo';
 import type { SplitConfig } from '../chunking/strategies';
 import type { PlaceNode } from '../osm/overpass';
-import type { RideProfileId } from './zones';
+import type { RideProfileId, ZoneId } from './zones';
 
 export type ColorScale = 'speed' | 'grade' | 'aerobar' | 'curvy' | 'zone';
 
@@ -45,6 +45,7 @@ export interface Chunk {
   overrides: ChunkOverrides;
   effectivePower: number;
   powerFourthMean?: number;
+  zoneSeconds?: Partial<Record<ZoneId, number>>;
   effectivePosition: Position;
   effectiveHeadwindKph: number;
   effectiveTemperatureC: number;

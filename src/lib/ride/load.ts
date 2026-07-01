@@ -77,7 +77,13 @@ export function computeLoadSummary(chunks: Chunk[], ftpW: number): LoadSummary {
     // back to the flat chunk power for state persisted before that field existed.
     const fourthPower = chunk.powerFourthMean ?? chunk.effectivePower ** 4;
     weightedFourthPower += fourthPower * seconds;
-    if (ftpW > 0) {
+    // Prefer per-segment zone tallies (a chunk can span zones); fall back to bucketing the whole
+    // chunk by its average power for state persisted before zoneSeconds existed.
+    if (chunk.zoneSeconds) {
+      for (const id of ZONE_IDS) {
+        zoneMinutes[id] += (chunk.zoneSeconds[id] ?? 0) / 60;
+      }
+    } else if (ftpW > 0) {
       zoneMinutes[zoneForFraction(chunk.effectivePower / ftpW)] += seconds / 60;
     }
   }

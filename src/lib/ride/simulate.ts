@@ -1,7 +1,7 @@
 import type { Position, Surface } from '../../types';
 import { getTuning } from '../tuning';
 import { cappedVelocityKph, computeOutputs } from '../calc';
-import { RIDE_PROFILES, deriveFtpW, type RideProfileId } from './zones';
+import { RIDE_PROFILES, deriveFtpW, zoneForFraction, type RideProfileId, type ZoneId } from './zones';
 import {
   URBAN_STOPS_PER_KM,
   STOP_DWELL_S,
@@ -414,6 +414,9 @@ interface ChunkPhysicsResult {
   // load model can build a Normalized Power that reflects within-chunk variability (climbs spike,
   // descents coast) instead of collapsing each chunk to a single flat power.
   powerFourthMean: number;
+  // Moving seconds spent in each zone, tallied per segment so a chunk that spans a zone boundary
+  // splits its time across zones instead of dumping it all into its average zone.
+  zoneSeconds: Partial<Record<ZoneId, number>>;
 }
 
 /**
@@ -431,6 +434,7 @@ function integrateChunkPhysics(
   let distanceKm = 0;
   let powerDistance = 0;
   let powerFourthTime = 0;
+  const zoneSeconds: Partial<Record<ZoneId, number>> = {};
 
   const heatFactor = params.heatEffect ? heatPowerFactor(params.temperatureC) : 1;
 
@@ -492,6 +496,10 @@ function integrateChunkPhysics(
     distanceKm += segKm;
     powerDistance += power * segKm;
     powerFourthTime += power ** 4 * segSeconds;
+    if (ftpW > 0) {
+      const zone = zoneForFraction(power / ftpW);
+      zoneSeconds[zone] = (zoneSeconds[zone] ?? 0) + segSeconds;
+    }
   }
 
   const movingSeconds = movingTimeMin * 60;
@@ -499,6 +507,7 @@ function integrateChunkPhysics(
   return {
     movingTimeMin,
     powerFourthMean: movingSeconds > 0 ? powerFourthTime / movingSeconds : 0,
+    zoneSeconds,
     avgVelocityKph: movingTimeMin > 0 ? distanceKm / (movingTimeMin / 60) : 0,
     avgPowerW: distanceKm > 0 ? powerDistance / distanceKm : params.profile.baselinePower,
   };
@@ -607,6 +616,7 @@ export function evaluateChunk({
     overrides,
     effectivePower: physics.avgPowerW,
     powerFourthMean: physics.powerFourthMean,
+    zoneSeconds: physics.zoneSeconds,
     effectivePosition,
     effectiveHeadwindKph: effectiveHeadwind,
     effectiveTemperatureC: effectiveTemperature,

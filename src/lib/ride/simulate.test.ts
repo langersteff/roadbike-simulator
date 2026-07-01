@@ -329,6 +329,13 @@ describe('climb demand (decoupled from cruise)', () => {
     expect(climbDemandFraction(4, 'easyEndurance')).toBeCloseTo(0.62 + 4 * 0.015, 5);
   });
 
+  it('tallies zone time per segment so a mixed chunk spans zones', () => {
+    const flatThenSteep = straightRoute([0, 0, 0, 120], 1); // three flat segments, one 12% ramp
+    const chunk = evaluate(flatThenSteep, { keepPowerSteady: false, rideProfile: 'endurance' });
+    expect((chunk.zoneSeconds?.Z2 ?? 0)).toBeGreaterThan(0);
+    expect((chunk.zoneSeconds?.Z3 ?? 0)).toBeGreaterThan(0);
+  });
+
   it('a moderate climb is driven by grade demand, not the cruise fraction', () => {
     const climb4 = straightRoute([0, 40], 1); // 4% grade
     const chunk = evaluate(climb4, { keepPowerSteady: false, rideProfile: 'endurance' });

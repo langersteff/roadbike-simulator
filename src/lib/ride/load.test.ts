@@ -45,6 +45,13 @@ describe('computeLoadSummary', () => {
     expect(summary.zoneMinutes.Z3).toBeCloseTo(10, 5);
     expect(summary.zoneMinutes.Z4).toBe(0);
   });
+
+  it('splits a chunk across zones using per-segment zoneSeconds when present', () => {
+    const mixed = chunk({ durationMin: 30, effectivePower: 300, zoneSeconds: { Z2: 600, Z3: 1200 } });
+    const summary = computeLoadSummary([mixed], 300);
+    expect(summary.zoneMinutes.Z2).toBeCloseTo(10, 5);
+    expect(summary.zoneMinutes.Z3).toBeCloseTo(20, 5);
+  });
 });
 
 describe('cumulativeLoadByChunk', () => {
