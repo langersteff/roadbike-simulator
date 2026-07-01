@@ -30,7 +30,6 @@ interface VelocityChartProps {
   startDateTime: string;
   daylightWindows: DaylightWindow[];
   ftpW: number;
-  modelExhaustion: boolean;
   riderWeightKg: number;
   onHoverKm?: (km: number | null) => void;
 }
@@ -79,6 +78,7 @@ interface ChartPoint {
   temperature: number;
   daylight: number;
   chunkIndex: number;
+  exhaustion?: number;
 }
 
 const TWILIGHT_MS = 45 * 60 * 1000;
@@ -204,30 +204,41 @@ interface TooltipProps {
   payload?: Array<{ payload: ChartPoint }>;
   chunks: Chunk[];
   startDateTime: string;
+  shown: Set<MetricKey>;
+  showExhaustion: boolean;
 }
 
-function ChunkTooltip({ active, payload, chunks, startDateTime }: TooltipProps) {
+function ChunkTooltip({ active, payload, chunks, startDateTime, shown, showExhaustion }: TooltipProps) {
   if (!active || !payload?.length) return null;
   const point = payload[0].payload;
   const chunk = chunks[point.chunkIndex];
   if (!chunk) return null;
   const offsetMin = chunk.etaFromStartMin + chunk.durationMin / 2;
+  const windValue = point.headwind ?? point.tailwind ?? 0;
   return (
     <div className="velocity-chart__tooltip">
       <div className="velocity-chart__tooltip-title">Chunk {chunk.index + 1}</div>
       <div>At {point.km.toFixed(2)} km</div>
-      <div>Velocity: {chunk.effectiveVelocityKph.toFixed(1)} km/h</div>
-      <div>Power: {chunk.effectivePower.toFixed(0)} W</div>
       <div>Grade: {chunk.effectiveGradePct.toFixed(1)} % · {gradeCategory(chunk.effectiveGradePct)}</div>
-      <div>
-        Wind: {chunk.effectiveHeadwindKph >= 0 ? 'head ' : 'tail '}
-        {Math.abs(chunk.effectiveHeadwindKph).toFixed(1)} km/h
-      </div>
-      <div>Rain: {chunk.effectivePrecipitationMmH.toFixed(1)} mm/h</div>
-      <div>Temperature: {chunk.effectiveTemperatureC.toFixed(0)} °C</div>
+      <div>Power: {chunk.effectivePower.toFixed(0)} W</div>
+      {shown.has('velocity') && <div>Velocity: {point.velocity.toFixed(1)} km/h</div>}
+      {shown.has('elevation') && <div>Elevation: {point.elevation.toFixed(0)} m</div>}
+      {shown.has('temperature') && <div>Temperature: {point.temperature.toFixed(0)} °C</div>}
+      {shown.has('wind') && (
+        <div>
+          Wind: {windValue >= 0 ? 'head ' : 'tail '}
+          {Math.abs(windValue).toFixed(1)} km/h
+        </div>
+      )}
+      {shown.has('crosswind') && <div>Crosswind: {point.crosswind.toFixed(1)} km/h</div>}
+      {shown.has('rain') && <div>Rain: {point.rain.toFixed(1)} mm/h</div>}
+      {shown.has('daylight') && <div>Daylight: {point.daylight >= 0.5 ? 'day' : 'night'}</div>}
+      {showExhaustion && point.exhaustion !== undefined && (
+        <div>Exhaustion: {point.exhaustion.toFixed(0)} %</div>
+      )}
+      <div>Position: {POSITION_LABELS[chunk.effectivePosition]}</div>
       <div>ETA: {formatMinutes(offsetMin)} from start</div>
       <div>Time: {formatClockTime(startDateTime, offsetMin)}</div>
-      <div>Position: {POSITION_LABELS[chunk.effectivePosition]}</div>
     </div>
   );
 }
@@ -238,23 +249,22 @@ export function VelocityChart({
   startDateTime,
   daylightWindows,
   ftpW,
-  modelExhaustion,
   riderWeightKg,
   onHoverKm,
 }: VelocityChartProps) {
+  const [shown, setShown] = useState<Set<MetricKey>>(() => new Set<MetricKey>(['velocity']));
+  const [showZones, setShowZones] = useState(false);
+  const [showExhaustion, setShowExhaustion] = useState(false);
   const data = useMemo(
     () => buildPoints(chunks, routePoints, startDateTime, daylightWindows),
     [chunks, routePoints, startDateTime, daylightWindows],
   );
   const bands = useMemo(() => zoneBands(chunks, ftpW), [chunks, ftpW]);
   const chartData = useMemo(() => {
-    if (!modelExhaustion || ftpW <= 0) return data;
+    if (!showExhaustion || ftpW <= 0) return data;
     const byChunk = exhaustionByChunk(chunks, riderWeightKg, ftpW);
     return data.map((point) => ({ ...point, exhaustion: exhaustionAtKm(point.km, chunks, byChunk) }));
-  }, [data, modelExhaustion, chunks, riderWeightKg, ftpW]);
-  const [shown, setShown] = useState<Set<MetricKey>>(() => new Set<MetricKey>(['velocity']));
-  const [showZones, setShowZones] = useState(false);
-  const [showExhaustion, setShowExhaustion] = useState(false);
+  }, [data, showExhaustion, chunks, riderWeightKg, ftpW]);
 
   if (chunks.length === 0) {
     return <div className="velocity-chart velocity-chart--empty">{VELOCITY_EMPTY}</div>;
@@ -305,17 +315,15 @@ export function VelocityChart({
           </span>
           Zones
         </label>
-        {modelExhaustion && (
-          <label className="velocity-chart__toggle">
-            <input
-              type="checkbox"
-              checked={showExhaustion}
-              onChange={() => setShowExhaustion((value) => !value)}
-            />
-            <span className="velocity-chart__swatch" style={{ background: EXHAUSTION_COLOR }} />
-            Exhaustion
-          </label>
-        )}
+        <label className="velocity-chart__toggle">
+          <input
+            type="checkbox"
+            checked={showExhaustion}
+            onChange={() => setShowExhaustion((value) => !value)}
+          />
+          <span className="velocity-chart__swatch" style={{ background: EXHAUSTION_COLOR }} />
+          Exhaustion
+        </label>
       </div>
       <ResponsiveContainer width="100%" height={260}>
         <ComposedChart
@@ -340,13 +348,14 @@ export function VelocityChart({
             bands.map((band, index) => (
               <ReferenceArea
                 key={index}
-                yAxisId="speed"
+                yAxisId="zoneband"
+                y1={0}
+                y2={1}
                 x1={band.startKm}
                 x2={band.endKm}
                 fill={band.color}
                 fillOpacity={0.22}
                 stroke="none"
-                ifOverflow="extendDomain"
               />
             ))}
           <XAxis
@@ -423,9 +432,19 @@ export function VelocityChart({
             label={{ value: '% exhausted', angle: -90, position: 'insideRight', fill: EXHAUSTION_COLOR }}
             stroke={EXHAUSTION_COLOR}
             tickLine={false}
-            hide={!(modelExhaustion && showExhaustion)}
+            hide={!showExhaustion}
           />
-          <Tooltip content={<ChunkTooltip chunks={chunks} startDateTime={startDateTime} />} />
+          <YAxis yAxisId="zoneband" domain={[0, 1]} hide />
+          <Tooltip
+            content={
+              <ChunkTooltip
+                chunks={chunks}
+                startDateTime={startDateTime}
+                shown={shown}
+                showExhaustion={showExhaustion}
+              />
+            }
+          />
           {shown.has('daylight') && (
             <Area
               type="linear"
@@ -533,7 +552,7 @@ export function VelocityChart({
               isAnimationActive={false}
             />
           )}
-          {modelExhaustion && showExhaustion && (
+          {showExhaustion && (
             <Line
               type="monotone"
               dataKey="exhaustion"
