@@ -33,7 +33,7 @@ describe('RIDE_PROFILES', () => {
   it('exposes cruise, ceiling and climb-rise for every profile id', () => {
     expect(ZONE_IDS).toEqual(['Z1', 'Z2', 'Z3', 'Z4', 'Z5']);
     expect(RIDE_PROFILES.easyEndurance).toEqual({ cruiseFraction: 0.4, ceilingFraction: 0.90, climbRise: 0.015, label: 'Easy endurance' });
-    expect(RIDE_PROFILES.endurance).toEqual({ cruiseFraction: 0.55, ceilingFraction: 0.90, climbRise: 0.045, label: 'Endurance' });
+    expect(RIDE_PROFILES.endurance).toEqual({ cruiseFraction: 0.55, ceilingFraction: 0.90, climbRise: 0.025, label: 'Endurance' });
     expect(RIDE_PROFILES.tempo).toEqual({ cruiseFraction: 0.78, ceilingFraction: 1.05, climbRise: 0.045, label: 'Tempo' });
     expect(RIDE_PROFILES.hiit).toEqual({ cruiseFraction: 0.65, ceilingFraction: 1.20, climbRise: 0.045, label: 'High intensity' });
   });

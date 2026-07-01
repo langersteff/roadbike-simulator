@@ -53,7 +53,7 @@ export interface RideProfileSpec {
 // climbRise: how sharply climbs push the zone up — gentler on easy rides.
 export const RIDE_PROFILES: Record<RideProfileId, RideProfileSpec> = {
   easyEndurance: { cruiseFraction: 0.4, ceilingFraction: 0.90, climbRise: 0.015, label: 'Easy endurance' },
-  endurance: { cruiseFraction: 0.55, ceilingFraction: 0.90, climbRise: 0.045, label: 'Endurance' },
+  endurance: { cruiseFraction: 0.55, ceilingFraction: 0.90, climbRise: 0.025, label: 'Endurance' },
   tempo: { cruiseFraction: 0.78, ceilingFraction: 1.05, climbRise: 0.045, label: 'Tempo' },
   hiit: { cruiseFraction: 0.65, ceilingFraction: 1.20, climbRise: 0.045, label: 'High intensity' },
 };

@@ -96,9 +96,9 @@ export const TUNING_KNOBS: TuningKnob[] = [
       help: 'Flat-ground effort for this profile. Higher = climbs reach Z3 sooner.',
       toDisplay: (fraction) => Math.round(fraction * 100), fromDisplay: (pct) => pct / 100 },
     { key: `${profile}ClimbRise` as keyof TuningConfig, label: 'Climb Rise (% FTP per 1% grade)', group: 'Ride effort', profile,
-      min: 0.5, max: 10, step: 0.5,
+      min: 0.5, max: 10, step: 0.05,
       help: 'How sharply climbs raise the zone. Lower = the jump to Z3 needs a steeper grade.',
-      toDisplay: (fraction) => Math.round(fraction * 1000) / 10, fromDisplay: (perPct) => perPct / 100 },
+      toDisplay: (fraction) => Math.round(fraction * 10000) / 100, fromDisplay: (perPct) => perPct / 100 },
   ]),
 ];
 

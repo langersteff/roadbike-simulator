@@ -321,7 +321,7 @@ describe('climb demand (decoupled from cruise)', () => {
   it('is zero on flat/descent and rises with grade', () => {
     expect(climbDemandFraction(0, 'endurance')).toBe(0);
     expect(climbDemandFraction(-5, 'endurance')).toBe(0);
-    expect(climbDemandFraction(4, 'endurance')).toBeCloseTo(0.8, 5);
+    expect(climbDemandFraction(4, 'endurance')).toBeCloseTo(0.62 + 4 * 0.025, 5);
   });
 
   it('rises more gently on easy endurance than endurance', () => {
