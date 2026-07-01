@@ -342,17 +342,38 @@ export function VelocityChart({
           onMouseLeave={() => onHoverKm?.(null)}
         >
           <CartesianGrid stroke="#e1e4ea" strokeDasharray="3 3" />
+          {showZones && (
+            <YAxis
+              yAxisId="zoneband"
+              domain={[0, 1]}
+              width={0}
+              tick={false}
+              axisLine={false}
+              tickLine={false}
+            />
+          )}
+          {showZones && (
+            <Line
+              yAxisId="zoneband"
+              dataKey={() => 0}
+              stroke="none"
+              dot={false}
+              legendType="none"
+              isAnimationActive={false}
+            />
+          )}
           {showZones &&
             bands.map((band, index) => (
               <ReferenceArea
                 key={index}
-                yAxisId="speed"
+                yAxisId="zoneband"
+                y1={0}
+                y2={1}
                 x1={band.startKm}
                 x2={band.endKm}
                 fill={band.color}
                 fillOpacity={0.45}
                 stroke="none"
-                ifOverflow="extendDomain"
               />
             ))}
           <XAxis
@@ -364,7 +385,7 @@ export function VelocityChart({
             stroke="#5a6373"
             tickLine={false}
           />
-          {(showSpeedAxis || showZones) && (
+          {showSpeedAxis && (
             <YAxis
               yAxisId="speed"
               orientation="left"

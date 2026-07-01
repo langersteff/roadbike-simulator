@@ -803,13 +803,29 @@ export function RideSimulator() {
       </section>
 
       <section className="ride-section">
-        <h2 className="ride-section__title">Split strategy</h2>
+        <div className="ride-section__title-row">
+          <h2 className="ride-section__title">Split strategy</h2>
+          <div className="ride-section__title-actions">
+            <button type="button" className="btn btn--ghost" onClick={() => setTuningOpen((open) => !open)}>
+              Tune…
+            </button>
+          </div>
+        </div>
         <SplitStrategyPicker
           value={state.split}
           onChange={handleSplitChange}
           onApply={handleReSplit}
           busy={busy}
         />
+        {tuningOpen && (
+          <TuningPopup
+            tuning={getTuning()}
+            minSectionKm={state.split.minSectionKm}
+            maxSectionKm={state.split.maxSectionKm}
+            onChange={handleLiveTuning}
+            onClose={() => setTuningOpen(false)}
+          />
+        )}
       </section>
 
       {persistenceWarning && <div className="ride-notice ride-notice--warn">{persistenceWarning}</div>}
@@ -841,20 +857,8 @@ export function RideSimulator() {
           <h2 className="ride-section__title">Route</h2>
           <div className="ride-section__title-actions">
             <ColorScaleToggle value={effectiveColorScale} onChange={setColorScale} />
-            <button type="button" className="btn btn--ghost" onClick={() => setTuningOpen((open) => !open)}>
-              Tune…
-            </button>
           </div>
         </div>
-        {tuningOpen && (
-          <TuningPopup
-            tuning={getTuning()}
-            minSectionKm={state.split.minSectionKm}
-            maxSectionKm={state.split.maxSectionKm}
-            onChange={handleLiveTuning}
-            onClose={() => setTuningOpen(false)}
-          />
-        )}
         <RouteMap
           points={orientedPoints}
           chunks={state.chunks}

@@ -32,7 +32,7 @@ describe('zoneForFraction', () => {
 describe('RIDE_PROFILES', () => {
   it('exposes cruise and ceiling fractions for every profile id', () => {
     expect(ZONE_IDS).toEqual(['Z1', 'Z2', 'Z3', 'Z4', 'Z5']);
-    expect(RIDE_PROFILES.endurance).toEqual({ cruiseFraction: 0.60, ceilingFraction: 0.90, label: 'Endurance' });
+    expect(RIDE_PROFILES.endurance).toEqual({ cruiseFraction: 0.65, ceilingFraction: 0.90, label: 'Endurance' });
     expect(RIDE_PROFILES.tempo).toEqual({ cruiseFraction: 0.78, ceilingFraction: 1.05, label: 'Tempo' });
     expect(RIDE_PROFILES.hiit).toEqual({ cruiseFraction: 0.65, ceilingFraction: 1.20, label: 'High intensity' });
   });

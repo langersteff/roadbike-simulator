@@ -1,4 +1,5 @@
 import { readJson, writeJson } from './persist';
+import { RIDE_PROFILES } from './ride/zones';
 
 /**
  * Live-tunable knobs for aerobar/chunking detection. These are read at compute time via
@@ -19,6 +20,10 @@ export interface TuningConfig {
   aeroMaxGradePct: number;
   /** Crosswind (m/s) above which aerobars are unsafe and disabled. */
   aeroMaxCrosswindMs: number;
+  /** Flat-ground effort as a fraction of FTP for each ride profile; grade and wind scale it up. */
+  enduranceCruise: number;
+  tempoCruise: number;
+  hiitCruise: number;
 }
 
 export const DEFAULT_TUNING: TuningConfig = {
@@ -28,12 +33,15 @@ export const DEFAULT_TUNING: TuningConfig = {
   aeroMinGradePct: -2,
   aeroMaxGradePct: 3,
   aeroMaxCrosswindMs: 9,
+  enduranceCruise: RIDE_PROFILES.endurance.cruiseFraction,
+  tempoCruise: RIDE_PROFILES.tempo.cruiseFraction,
+  hiitCruise: RIDE_PROFILES.hiit.cruiseFraction,
 };
 
 export interface TuningKnob {
   key: keyof TuningConfig;
   label: string;
-  group: 'Detection' | 'Aerobar gate';
+  group: 'Detection' | 'Aerobar gate' | 'Ride effort';
   min: number;
   max: number;
   step: number;
@@ -68,6 +76,15 @@ export const TUNING_KNOBS: TuningKnob[] = [
     help: 'Steepest climb still allowed for aero.' },
   { key: 'aeroMaxCrosswindMs', label: 'Max crosswind (m/s)', group: 'Aerobar gate', min: 3, max: 15, step: 0.5,
     help: 'Crosswind above this disables aero.' },
+  { key: 'enduranceCruise', label: 'Endurance cruise (% FTP)', group: 'Ride effort', min: 40, max: 100, step: 1,
+    help: 'Flat effort on Endurance rides. Higher = climbs reach Z3 sooner.',
+    toDisplay: (fraction) => Math.round(fraction * 100), fromDisplay: (pct) => pct / 100 },
+  { key: 'tempoCruise', label: 'Tempo cruise (% FTP)', group: 'Ride effort', min: 40, max: 100, step: 1,
+    help: 'Flat effort on Tempo rides.',
+    toDisplay: (fraction) => Math.round(fraction * 100), fromDisplay: (pct) => pct / 100 },
+  { key: 'hiitCruise', label: 'High-intensity cruise (% FTP)', group: 'Ride effort', min: 40, max: 100, step: 1,
+    help: 'Flat effort between the hard efforts on High-intensity rides.',
+    toDisplay: (fraction) => Math.round(fraction * 100), fromDisplay: (pct) => pct / 100 },
 ];
 
 const STORAGE_KEY = 'bikecalc.tuning.v1';

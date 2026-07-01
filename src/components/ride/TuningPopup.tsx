@@ -11,7 +11,7 @@ interface TuningPopupProps {
   onClose: () => void;
 }
 
-const GROUPS: Array<'Detection' | 'Aerobar gate'> = ['Detection', 'Aerobar gate'];
+const GROUPS: Array<'Detection' | 'Aerobar gate' | 'Ride effort'> = ['Detection', 'Aerobar gate', 'Ride effort'];
 
 export function TuningPopup({ tuning, minSectionKm, maxSectionKm, onChange, onClose }: TuningPopupProps) {
   const [draft, setDraft] = useState<TuningConfig>(tuning);

@@ -114,6 +114,14 @@ export function windPowerFactor(headwindKph: number, crosswindKph: number): numb
   return Math.min(WIND_POWER_MAX_FACTOR, 1 + effectiveHeadwind * WIND_POWER_PER_KPH);
 }
 
+/** Flat-ground effort fraction for the profile, read live from tuning so the popup can adjust it. */
+function cruiseFractionFor(rideProfile: RideProfileId): number {
+  const tuning = getTuning();
+  if (rideProfile === 'endurance') return tuning.enduranceCruise;
+  if (rideProfile === 'tempo') return tuning.tempoCruise;
+  return tuning.hiitCruise;
+}
+
 export function crrMultiplierForRain(precipitationMmH: number): number {
   if (!Number.isFinite(precipitationMmH) || precipitationMmH <= 0) return 1;
   return Math.min(RAIN_CRR_MAX_FACTOR, 1 + precipitationMmH * RAIN_CRR_PER_MMH);
@@ -418,8 +426,9 @@ function integrateChunkPhysics(
     const crosswind = crosswindKphFromWeather(params.weather, segBearing);
     const ftpW = deriveFtpW(params.profile.baselinePower);
     const spec = RIDE_PROFILES[params.rideProfile];
+    const cruiseFraction = cruiseFractionFor(params.rideProfile);
     const effortFraction = Math.min(
-      spec.cruiseFraction * powerFactorForGrade(grade) * windPowerFactor(headwind, crosswind),
+      cruiseFraction * powerFactorForGrade(grade) * windPowerFactor(headwind, crosswind),
       spec.ceilingFraction,
     );
     const power =

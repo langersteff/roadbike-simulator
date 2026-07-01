@@ -49,7 +49,7 @@ export interface RideProfileSpec {
 // cruiseFraction: effort on flat ground as a fraction of FTP (scaled by grade below).
 // ceilingFraction: hardest sustained climb effort the profile allows.
 export const RIDE_PROFILES: Record<RideProfileId, RideProfileSpec> = {
-  endurance: { cruiseFraction: 0.60, ceilingFraction: 0.90, label: 'Endurance' },
+  endurance: { cruiseFraction: 0.65, ceilingFraction: 0.90, label: 'Endurance' },
   tempo: { cruiseFraction: 0.78, ceilingFraction: 1.05, label: 'Tempo' },
   hiit: { cruiseFraction: 0.65, ceilingFraction: 1.20, label: 'High intensity' },
 };
