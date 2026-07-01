@@ -7,13 +7,17 @@ import {
   speedDisplay,
   UNIT_LABELS,
 } from '../../lib/units';
-import { formatMinutes, SUMMARY_EMPTY } from '../../lib/uiCopy';
+import { formatMinutes, SUMMARY_EMPTY, RIDE_LOAD_CAVEAT } from '../../lib/uiCopy';
+import type { LoadSummary } from '../../lib/ride/load';
+import { ZONE_IDS } from '../../lib/ride/zones';
+import { InfoTooltip } from '../InfoTooltip';
 
 interface RouteSummaryProps {
   points: RoutePoint[];
   chunks: Chunk[];
   startDateTime: string;
   units: UnitSystem;
+  load: LoadSummary | null;
 }
 
 function elevationGain(points: RoutePoint[]): number {
@@ -37,7 +41,7 @@ function formatArrival(startDateTime: string, totalMin: number): string {
   return arrival.toLocaleString();
 }
 
-export function RouteSummary({ points, chunks, startDateTime, units }: RouteSummaryProps) {
+export function RouteSummary({ points, chunks, startDateTime, units, load }: RouteSummaryProps) {
   if (points.length === 0) {
     return <div className="route-summary route-summary--empty">{SUMMARY_EMPTY}</div>;
   }
@@ -79,6 +83,35 @@ export function RouteSummary({ points, chunks, startDateTime, units }: RouteSumm
         <span className="route-summary__label">Chunks</span>
         <span className="route-summary__value">{chunks.length}</span>
       </div>
+      {load && (
+        <>
+          <div className="route-summary__item">
+            <span className="route-summary__label">
+              Training load
+              <InfoTooltip content={RIDE_LOAD_CAVEAT} label="How training load is estimated" />
+            </span>
+            <span className="route-summary__value">{Math.round(load.tss)} TSS</span>
+          </div>
+          <div className="route-summary__item">
+            <span className="route-summary__label">Intensity (IF)</span>
+            <span className="route-summary__value">{load.intensityFactor.toFixed(2)}</span>
+          </div>
+          <div className="route-summary__item">
+            <span className="route-summary__label">Normalized power</span>
+            <span className="route-summary__value">{Math.round(load.npW)} W</span>
+          </div>
+          <div className="route-summary__item">
+            <span className="route-summary__label">Estimated FTP</span>
+            <span className="route-summary__value">{Math.round(load.ftpW)} W</span>
+          </div>
+          <div className="route-summary__item">
+            <span className="route-summary__label">Time in zone</span>
+            <span className="route-summary__value">
+              {ZONE_IDS.map((id) => `${id} ${Math.round(load.zoneMinutes[id])}m`).join(' · ')}
+            </span>
+          </div>
+        </>
+      )}
     </div>
   );
 }

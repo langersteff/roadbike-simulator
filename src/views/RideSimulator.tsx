@@ -36,6 +36,8 @@ import type {
   RiderProfile,
 } from '../lib/ride/types';
 import { loadRideState, saveRideState } from '../lib/ride/storage';
+import { computeLoadSummary } from '../lib/ride/load';
+import { deriveFtpW } from '../lib/ride/zones';
 import type { Surface, UnitSystem } from '../types';
 import { GpxUpload } from '../components/ride/GpxUpload';
 import { RiderProfileForm } from '../components/ride/RiderProfileForm';
@@ -682,6 +684,14 @@ export function RideSimulator() {
     return locationAtKm(orientedPoints, hoveredKm);
   }, [hoveredKm, orientedPoints]);
 
+  const load = useMemo(
+    () =>
+      state.chunks.length > 0
+        ? computeLoadSummary(state.chunks, deriveFtpW(state.profile.baselinePower))
+        : null,
+    [state.chunks, state.profile.baselinePower],
+  );
+
   return (
     <div className="app">
       <header className="app__header">
@@ -820,6 +830,7 @@ export function RideSimulator() {
             chunks={state.chunks}
             startDateTime={state.startDateTime}
             units={state.units}
+            load={load}
         />
       </section>
 
