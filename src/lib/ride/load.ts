@@ -3,12 +3,12 @@ import { zoneForFraction, ZONE_IDS, type ZoneId } from './zones';
 import { urbanStopPenaltyMin } from './simulate';
 
 export interface LoadSummary {
-  ftpW: number;
-  npW: number;
-  intensityFactor: number;
-  tss: number;
-  movingSeconds: number;
-  zoneMinutes: Record<ZoneId, number>;
+  readonly ftpW: number;
+  readonly npW: number;
+  readonly intensityFactor: number;
+  readonly tss: number;
+  readonly movingSeconds: number;
+  readonly zoneMinutes: Readonly<Record<ZoneId, number>>;
 }
 
 function emptyZoneMinutes(): Record<ZoneId, number> {
