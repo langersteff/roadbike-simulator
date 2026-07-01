@@ -364,73 +364,87 @@ export function VelocityChart({
             stroke="#5a6373"
             tickLine={false}
           />
-          <YAxis
-            yAxisId="speed"
-            orientation="left"
-            tickFormatter={(value: number) => value.toFixed(0)}
-            label={{ value: 'km/h', angle: -90, position: 'insideLeft', fill: '#3457d5' }}
-            stroke="#3457d5"
-            tickLine={false}
-            hide={!showSpeedAxis}
-          />
-          <YAxis
-            yAxisId="temperature"
-            orientation="right"
-            tickFormatter={(value: number) => value.toFixed(0)}
-            label={{ value: '°C', angle: -90, position: 'insideRight', fill: '#f97316' }}
-            stroke="#f97316"
-            tickLine={false}
-            hide={!showTemperatureAxis}
-          />
-          <YAxis
-            yAxisId="rain"
-            orientation="right"
-            tickFormatter={(value: number) => value.toFixed(1)}
-            label={{ value: 'mm/h', angle: -90, position: 'insideRight', fill: '#5fa9e8' }}
-            stroke="#5fa9e8"
-            tickLine={false}
-            domain={[0, 'auto']}
-            hide={!showRainAxis}
-          />
-          <YAxis
-            yAxisId="elevation"
-            orientation="right"
-            tickFormatter={(value: number) => value.toFixed(0)}
-            label={{ value: 'm', angle: -90, position: 'insideRight', fill: '#8a6f47' }}
-            stroke="#8a6f47"
-            tickLine={false}
-            hide={!showElevationAxis}
-          />
-          <YAxis
-            yAxisId="wind"
-            orientation="right"
-            tickFormatter={(value: number) => value.toFixed(0)}
-            label={{ value: 'wind km/h', angle: -90, position: 'insideRight', fill: '#c8463a' }}
-            stroke="#c8463a"
-            tickLine={false}
-            hide={!showWindAxis}
-          />
-          <YAxis
-            yAxisId="daylight"
-            orientation="right"
-            domain={[0, 1]}
-            ticks={[0, 1]}
-            tickFormatter={(value: number) => (value >= 0.5 ? 'day' : 'night')}
-            label={{ value: 'sun', angle: -90, position: 'insideRight', fill: '#eab308' }}
-            stroke="#eab308"
-            tickLine={false}
-            hide={!showDaylightAxis}
-          />
-          <YAxis
-            yAxisId="load"
-            orientation="right"
-            domain={[0, 'auto']}
-            tickFormatter={(value: number) => value.toFixed(0)}
-            label={{ value: 'TSS', angle: -90, position: 'insideRight', fill: LOAD_COLOR }}
-            stroke={LOAD_COLOR}
-            tickLine={false}
-            hide={!showLoad}
-          />
+          {(showSpeedAxis || showZones) && (
+            <YAxis
+              yAxisId="speed"
+              orientation="left"
+              width={52}
+              tickFormatter={(value: number) => value.toFixed(0)}
+              label={{ value: 'km/h', angle: -90, position: 'insideLeft', fill: '#3457d5' }}
+              stroke="#3457d5"
+              tickLine={false}
+            />
+          )}
+          {showTemperatureAxis && (
+            <YAxis
+              yAxisId="temperature"
+              orientation="right"
+              width={52}
+              tickFormatter={(value: number) => value.toFixed(0)}
+              label={{ value: '°C', angle: -90, position: 'insideRight', fill: '#f97316' }}
+              stroke="#f97316"
+              tickLine={false}
+            />
+          )}
+          {showRainAxis && (
+            <YAxis
+              yAxisId="rain"
+              orientation="right"
+              width={52}
+              tickFormatter={(value: number) => value.toFixed(1)}
+              label={{ value: 'mm/h', angle: -90, position: 'insideRight', fill: '#5fa9e8' }}
+              stroke="#5fa9e8"
+              tickLine={false}
+              domain={[0, 'auto']}
+            />
+          )}
+          {showElevationAxis && (
+            <YAxis
+              yAxisId="elevation"
+              orientation="right"
+              width={52}
+              tickFormatter={(value: number) => value.toFixed(0)}
+              label={{ value: 'm', angle: -90, position: 'insideRight', fill: '#8a6f47' }}
+              stroke="#8a6f47"
+              tickLine={false}
+            />
+          )}
+          {showWindAxis && (
+            <YAxis
+              yAxisId="wind"
+              orientation="right"
+              width={56}
+              tickFormatter={(value: number) => value.toFixed(0)}
+              label={{ value: 'wind km/h', angle: -90, position: 'insideRight', fill: '#c8463a' }}
+              stroke="#c8463a"
+              tickLine={false}
+            />
+          )}
+          {showDaylightAxis && (
+            <YAxis
+              yAxisId="daylight"
+              orientation="right"
+              width={52}
+              domain={[0, 1]}
+              ticks={[0, 1]}
+              tickFormatter={(value: number) => (value >= 0.5 ? 'day' : 'night')}
+              label={{ value: 'sun', angle: -90, position: 'insideRight', fill: '#eab308' }}
+              stroke="#eab308"
+              tickLine={false}
+            />
+          )}
+          {showLoad && (
+            <YAxis
+              yAxisId="load"
+              orientation="right"
+              width={52}
+              domain={[0, 'auto']}
+              tickFormatter={(value: number) => value.toFixed(0)}
+              label={{ value: 'TSS', angle: -90, position: 'insideRight', fill: LOAD_COLOR }}
+              stroke={LOAD_COLOR}
+              tickLine={false}
+            />
+          )}
           <Tooltip
             content={
               <ChunkTooltip
