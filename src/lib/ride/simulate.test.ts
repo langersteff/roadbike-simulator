@@ -319,15 +319,20 @@ describe('windPowerFactor', () => {
 
 describe('climb demand (decoupled from cruise)', () => {
   it('is zero on flat/descent and rises with grade', () => {
-    expect(climbDemandFraction(0)).toBe(0);
-    expect(climbDemandFraction(-5)).toBe(0);
-    expect(climbDemandFraction(4)).toBeCloseTo(0.8, 5);
+    expect(climbDemandFraction(0, 'endurance')).toBe(0);
+    expect(climbDemandFraction(-5, 'endurance')).toBe(0);
+    expect(climbDemandFraction(4, 'endurance')).toBeCloseTo(0.8, 5);
+  });
+
+  it('rises more gently on easy endurance than endurance', () => {
+    expect(climbDemandFraction(4, 'easyEndurance')).toBeLessThan(climbDemandFraction(4, 'endurance'));
+    expect(climbDemandFraction(4, 'easyEndurance')).toBeCloseTo(0.62 + 4 * 0.015, 5);
   });
 
   it('a moderate climb is driven by grade demand, not the cruise fraction', () => {
     const climb4 = straightRoute([0, 40], 1); // 4% grade
     const chunk = evaluate(climb4, { keepPowerSteady: false, rideProfile: 'endurance' });
-    const expected = deriveFtpW(200) * climbDemandFraction(4);
+    const expected = deriveFtpW(200) * climbDemandFraction(4, 'endurance');
     expect(chunk.effectivePower).toBeCloseTo(expected, 0);
   });
 });

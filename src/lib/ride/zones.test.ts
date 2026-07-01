@@ -30,10 +30,19 @@ describe('zoneForFraction', () => {
 });
 
 describe('RIDE_PROFILES', () => {
-  it('exposes cruise and ceiling fractions for every profile id', () => {
+  it('exposes cruise, ceiling and climb-rise for every profile id', () => {
     expect(ZONE_IDS).toEqual(['Z1', 'Z2', 'Z3', 'Z4', 'Z5']);
-    expect(RIDE_PROFILES.endurance).toEqual({ cruiseFraction: 0.65, ceilingFraction: 0.90, label: 'Endurance' });
-    expect(RIDE_PROFILES.tempo).toEqual({ cruiseFraction: 0.78, ceilingFraction: 1.05, label: 'Tempo' });
-    expect(RIDE_PROFILES.hiit).toEqual({ cruiseFraction: 0.65, ceilingFraction: 1.20, label: 'High intensity' });
+    expect(RIDE_PROFILES.easyEndurance).toEqual({ cruiseFraction: 0.4, ceilingFraction: 0.90, climbRise: 0.015, label: 'Easy endurance' });
+    expect(RIDE_PROFILES.endurance).toEqual({ cruiseFraction: 0.55, ceilingFraction: 0.90, climbRise: 0.045, label: 'Endurance' });
+    expect(RIDE_PROFILES.tempo).toEqual({ cruiseFraction: 0.78, ceilingFraction: 1.05, climbRise: 0.045, label: 'Tempo' });
+    expect(RIDE_PROFILES.hiit).toEqual({ cruiseFraction: 0.65, ceilingFraction: 1.20, climbRise: 0.045, label: 'High intensity' });
+  });
+
+  it('reaches Z3 at a steeper grade for easy endurance than endurance', () => {
+    // Z3 begins at 76% FTP; climb demand = 0.62 + grade × climbRise.
+    const z3Grade = (climbRise: number) => (0.76 - 0.62) / climbRise;
+    expect(z3Grade(RIDE_PROFILES.easyEndurance.climbRise)).toBeGreaterThan(
+      z3Grade(RIDE_PROFILES.endurance.climbRise),
+    );
   });
 });

@@ -62,9 +62,17 @@ const CROSSWIND_EFFORT_WEIGHT = 0.5;
 // the per-grade rise is live-tunable (lower = the jump to Z3 needs a steeper grade).
 const CLIMB_DEMAND_BASE = 0.62;
 
-export function climbDemandFraction(gradePct: number): number {
+function climbRiseFor(rideProfile: RideProfileId): number {
+  const tuning = getTuning();
+  if (rideProfile === 'easyEndurance') return tuning.easyEnduranceClimbRise;
+  if (rideProfile === 'endurance') return tuning.enduranceClimbRise;
+  if (rideProfile === 'tempo') return tuning.tempoClimbRise;
+  return tuning.hiitClimbRise;
+}
+
+export function climbDemandFraction(gradePct: number, rideProfile: RideProfileId): number {
   if (gradePct <= 0) return 0;
-  return CLIMB_DEMAND_BASE + gradePct * getTuning().climbDemandPerPercent;
+  return CLIMB_DEMAND_BASE + gradePct * climbRiseFor(rideProfile);
 }
 
 const RAIN_CRR_PER_MMH = 0.015;
@@ -129,6 +137,7 @@ export function windPowerFactor(headwindKph: number, crosswindKph: number): numb
 /** Flat-ground effort fraction for the profile, read live from tuning so the popup can adjust it. */
 function cruiseFractionFor(rideProfile: RideProfileId): number {
   const tuning = getTuning();
+  if (rideProfile === 'easyEndurance') return tuning.easyEnduranceCruise;
   if (rideProfile === 'endurance') return tuning.enduranceCruise;
   if (rideProfile === 'tempo') return tuning.tempoCruise;
   return tuning.hiitCruise;
@@ -445,7 +454,7 @@ function integrateChunkPhysics(
     const baseEffort = cruiseFraction * descentTaper;
     const effortFraction = Math.min(
       spec.ceilingFraction,
-      Math.max(baseEffort, climbDemandFraction(grade)) * windPowerFactor(headwind, crosswind),
+      Math.max(baseEffort, climbDemandFraction(grade, params.rideProfile)) * windPowerFactor(headwind, crosswind),
     );
     const power =
       heatFactor *

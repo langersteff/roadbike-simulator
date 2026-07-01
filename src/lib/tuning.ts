@@ -1,5 +1,5 @@
 import { readJson, writeJson } from './persist';
-import { RIDE_PROFILES } from './ride/zones';
+import { RIDE_PROFILES, type RideProfileId } from './ride/zones';
 
 /**
  * Live-tunable knobs for aerobar/chunking detection. These are read at compute time via
@@ -21,12 +21,16 @@ export interface TuningConfig {
   /** Crosswind (m/s) above which aerobars are unsafe and disabled. */
   aeroMaxCrosswindMs: number;
   /** Flat-ground effort as a fraction of FTP for each ride profile; grade and wind scale it up. */
+  easyEnduranceCruise: number;
   enduranceCruise: number;
   tempoCruise: number;
   hiitCruise: number;
-  /** How sharply a climb raises effort: FTP-fraction added per 1% of grade. Lower = zones jump at
-   *  steeper grades (Z3 arrives later). */
-  climbDemandPerPercent: number;
+  /** How sharply a climb raises effort per ride profile: FTP-fraction added per 1% of grade.
+   *  Lower = zones jump at steeper grades (Z3 arrives later). */
+  easyEnduranceClimbRise: number;
+  enduranceClimbRise: number;
+  tempoClimbRise: number;
+  hiitClimbRise: number;
 }
 
 export const DEFAULT_TUNING: TuningConfig = {
@@ -36,16 +40,22 @@ export const DEFAULT_TUNING: TuningConfig = {
   aeroMinGradePct: -2,
   aeroMaxGradePct: 3,
   aeroMaxCrosswindMs: 9,
+  easyEnduranceCruise: RIDE_PROFILES.easyEndurance.cruiseFraction,
   enduranceCruise: RIDE_PROFILES.endurance.cruiseFraction,
   tempoCruise: RIDE_PROFILES.tempo.cruiseFraction,
   hiitCruise: RIDE_PROFILES.hiit.cruiseFraction,
-  climbDemandPerPercent: 0.045,
+  easyEnduranceClimbRise: RIDE_PROFILES.easyEndurance.climbRise,
+  enduranceClimbRise: RIDE_PROFILES.endurance.climbRise,
+  tempoClimbRise: RIDE_PROFILES.tempo.climbRise,
+  hiitClimbRise: RIDE_PROFILES.hiit.climbRise,
 };
 
 export interface TuningKnob {
   key: keyof TuningConfig;
   label: string;
   group: 'Detection' | 'Aerobar gate' | 'Ride effort';
+  /** When set, the knob only shows while this ride profile is selected. */
+  profile?: RideProfileId;
   min: number;
   max: number;
   step: number;
@@ -80,18 +90,16 @@ export const TUNING_KNOBS: TuningKnob[] = [
     help: 'Steepest climb still allowed for aero.' },
   { key: 'aeroMaxCrosswindMs', label: 'Max crosswind (m/s)', group: 'Aerobar gate', min: 3, max: 15, step: 0.5,
     help: 'Crosswind above this disables aero.' },
-  { key: 'enduranceCruise', label: 'Endurance cruise (% FTP)', group: 'Ride effort', min: 40, max: 100, step: 1,
-    help: 'Flat effort on Endurance rides. Higher = climbs reach Z3 sooner.',
-    toDisplay: (fraction) => Math.round(fraction * 100), fromDisplay: (pct) => pct / 100 },
-  { key: 'tempoCruise', label: 'Tempo cruise (% FTP)', group: 'Ride effort', min: 40, max: 100, step: 1,
-    help: 'Flat effort on Tempo rides.',
-    toDisplay: (fraction) => Math.round(fraction * 100), fromDisplay: (pct) => pct / 100 },
-  { key: 'hiitCruise', label: 'High-intensity cruise (% FTP)', group: 'Ride effort', min: 40, max: 100, step: 1,
-    help: 'Flat effort between the hard efforts on High-intensity rides.',
-    toDisplay: (fraction) => Math.round(fraction * 100), fromDisplay: (pct) => pct / 100 },
-  { key: 'climbDemandPerPercent', label: 'Climb rise (% FTP per 1% grade)', group: 'Ride effort', min: 1, max: 10, step: 0.5,
-    help: 'How sharply climbs raise the zone. Lower = the jump to Z3 needs a steeper grade.',
-    toDisplay: (fraction) => Math.round(fraction * 1000) / 10, fromDisplay: (perPct) => perPct / 100 },
+  ...(['easyEndurance', 'endurance', 'tempo', 'hiit'] as RideProfileId[]).flatMap((profile): TuningKnob[] => [
+    { key: `${profile}Cruise` as keyof TuningConfig, label: 'Cruise Effort (% FTP)', group: 'Ride effort', profile,
+      min: 30, max: 100, step: 1,
+      help: 'Flat-ground effort for this profile. Higher = climbs reach Z3 sooner.',
+      toDisplay: (fraction) => Math.round(fraction * 100), fromDisplay: (pct) => pct / 100 },
+    { key: `${profile}ClimbRise` as keyof TuningConfig, label: 'Climb Rise (% FTP per 1% grade)', group: 'Ride effort', profile,
+      min: 0.5, max: 10, step: 0.5,
+      help: 'How sharply climbs raise the zone. Lower = the jump to Z3 needs a steeper grade.',
+      toDisplay: (fraction) => Math.round(fraction * 1000) / 10, fromDisplay: (perPct) => perPct / 100 },
+  ]),
 ];
 
 const STORAGE_KEY = 'bikecalc.tuning.v1';
