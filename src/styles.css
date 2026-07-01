@@ -890,13 +890,69 @@ body {
   background: var(--surface);
 }
 
+.route-summary__zones-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
 .route-summary__zones-title {
   display: block;
-  margin-bottom: 8px;
   font-size: 12px;
   color: var(--text-soft);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.route-summary__zones-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.route-summary__zones-copy {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.route-summary__zones-copy:hover,
+.route-summary__zones-copy:focus-visible {
+  color: var(--text);
+  outline: none;
+}
+
+.zone-copy-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: var(--shadow);
+  animation: zone-copy-toast-in 120ms ease-out;
+}
+
+@keyframes zone-copy-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 .zone-breakdown {

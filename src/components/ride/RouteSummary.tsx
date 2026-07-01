@@ -1,9 +1,18 @@
+import { useState } from 'react';
+import { Zap, HeartPulse, Check } from 'lucide-react';
 import type { Chunk } from '../../lib/ride/types';
 import type { RoutePoint } from '../../lib/gpx/parse';
-import { formatMinutes, SUMMARY_EMPTY, RIDE_LOAD_CAVEAT } from '../../lib/uiCopy';
+import {
+  formatMinutes,
+  buildZoneIntervalsText,
+  SUMMARY_EMPTY,
+  RIDE_LOAD_CAVEAT,
+} from '../../lib/uiCopy';
 import type { LoadSummary } from '../../lib/ride/load';
 import { InfoTooltip } from '../InfoTooltip';
 import { ZoneBreakdown } from './ZoneBreakdown';
+
+type ZoneCopyTarget = 'power' | 'hr';
 
 interface RouteSummaryProps {
   points: RoutePoint[];
@@ -34,6 +43,15 @@ function formatArrival(startDateTime: string, totalMin: number): string {
 }
 
 export function RouteSummary({ points, chunks, startDateTime, load }: RouteSummaryProps) {
+  const [copied, setCopied] = useState<ZoneCopyTarget | null>(null);
+
+  const copyZones = async (target: ZoneCopyTarget) => {
+    if (!load) return;
+    await navigator.clipboard.writeText(buildZoneIntervalsText(load.zoneMinutes, target));
+    setCopied(target);
+    window.setTimeout(() => setCopied((current) => (current === target ? null : current)), 1800);
+  };
+
   if (points.length === 0) {
     return <div className="route-summary route-summary--empty">{SUMMARY_EMPTY}</div>;
   }
@@ -102,8 +120,35 @@ export function RouteSummary({ points, chunks, startDateTime, load }: RouteSumma
     </div>
     {load && (
       <div className="route-summary__zones">
-        <span className="route-summary__zones-title">Time in zone</span>
+        <div className="route-summary__zones-header">
+          <span className="route-summary__zones-title">Time in zone</span>
+          <div className="route-summary__zones-actions">
+            <button
+              type="button"
+              className="route-summary__zones-copy"
+              title="Copy power zones for intervals.icu"
+              aria-label="Copy power zones for intervals.icu"
+              onClick={() => copyZones('power')}
+            >
+              {copied === 'power' ? <Check width={16} height={16} /> : <Zap width={16} height={16} />}
+            </button>
+            <button
+              type="button"
+              className="route-summary__zones-copy"
+              title="Copy HR zones for intervals.icu"
+              aria-label="Copy HR zones for intervals.icu"
+              onClick={() => copyZones('hr')}
+            >
+              {copied === 'hr' ? <Check width={16} height={16} /> : <HeartPulse width={16} height={16} />}
+            </button>
+          </div>
+        </div>
         <ZoneBreakdown load={load} />
+      </div>
+    )}
+    {copied && (
+      <div className="zone-copy-toast" role="status" aria-live="polite">
+        Copied intervals.icu Zones description to clipboard
       </div>
     )}
     </>

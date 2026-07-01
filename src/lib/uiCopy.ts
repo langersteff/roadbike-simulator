@@ -1,3 +1,5 @@
+import { ZONE_IDS, type ZoneId } from './ride/zones';
+
 export const WIND_SIGN_TOOLTIP = [
   'Sign convention:',
   '• Positive value = headwind (slows you down)',
@@ -25,6 +27,28 @@ export function formatMinutes(min: number): string {
   const hours = Math.floor(min / 60);
   const minutes = Math.round(min - hours * 60);
   return hours > 0 ? `${hours}h ${minutes.toString().padStart(2, '0')}m` : `${minutes} min`;
+}
+
+// intervals.icu duration syntax: "2h", "45m", "1h5m" — no spaces, whole hours drop minutes.
+function formatIntervalsDuration(min: number): string {
+  const total = Math.round(min);
+  const hours = Math.floor(total / 60);
+  const minutes = total - hours * 60;
+  if (hours > 0 && minutes > 0) return `${hours}h${minutes}m`;
+  if (hours > 0) return `${hours}h`;
+  return `${minutes}m`;
+}
+
+// Builds an intervals.icu workout description from time-in-zone, one step per zone with time.
+// HR target appends " HR" so intervals.icu reads the same Z1..Z5 bands as heart-rate zones.
+export function buildZoneIntervalsText(
+  zoneMinutes: Readonly<Record<ZoneId, number>>,
+  target: 'power' | 'hr',
+): string {
+  const suffix = target === 'hr' ? ' HR' : '';
+  return ZONE_IDS.filter((id) => Math.round(zoneMinutes[id]) > 0)
+    .map((id) => `- ${formatIntervalsDuration(zoneMinutes[id])} ${id}${suffix}`)
+    .join('\n');
 }
 
 export const SUMMARY_EMPTY = 'Upload a GPX file to see distance, elevation, duration and arrival time.';
