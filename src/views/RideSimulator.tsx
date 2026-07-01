@@ -270,6 +270,7 @@ export function RideSimulator() {
             autoAerobar,
             keepPowerSteady,
             heatEffect,
+            rideProfile: state.rideProfile ?? 'endurance',
             urbanRanges: activeUrbanRanges,
             curvyRanges: activeCurvyRanges,
             surfaces: activeSurfaces,
@@ -309,6 +310,7 @@ export function RideSimulator() {
           autoAerobar,
           keepPowerSteady,
           heatEffect,
+          rideProfile: state.rideProfile ?? 'endurance',
           urbanRanges: activeUrbanRanges,
           curvyRanges: activeCurvyRanges,
           surfaces: activeSurfaces,
@@ -334,6 +336,7 @@ export function RideSimulator() {
             autoAerobar,
             keepPowerSteady,
             heatEffect,
+            rideProfile: state.rideProfile ?? 'endurance',
             urbanRanges: activeUrbanRanges,
             curvyRanges: activeCurvyRanges,
             surfaces: activeSurfaces,
@@ -354,7 +357,7 @@ export function RideSimulator() {
         setBusy(false);
       }
     },
-    [orientedPoints, overridesByChunk, state.profile, state.startDateTime, state.autoAerobar, state.keepPowerSteady, state.heatEffect, setUrbanPlaces],
+    [orientedPoints, overridesByChunk, state.profile, state.startDateTime, state.autoAerobar, state.keepPowerSteady, state.heatEffect, state.rideProfile, setUrbanPlaces],
   );
 
   const reSimulate = useCallback(
@@ -372,6 +375,7 @@ export function RideSimulator() {
         autoAerobar: state.autoAerobar ?? false,
         keepPowerSteady: state.keepPowerSteady ?? false,
         heatEffect: state.heatEffect ?? false,
+        rideProfile: state.rideProfile ?? 'endurance',
         urbanRanges,
         curvyRanges,
         surfaces:
@@ -380,7 +384,7 @@ export function RideSimulator() {
       setState((prev) => ({ ...prev, chunks }));
       return chunks;
     },
-    [orientedPoints, state.profile, state.autoAerobar, state.keepPowerSteady, state.heatEffect, urbanRanges, curvyRanges],
+    [orientedPoints, state.profile, state.autoAerobar, state.keepPowerSteady, state.heatEffect, state.rideProfile, urbanRanges, curvyRanges],
   );
 
   const calculateSurfaceSpeeds = useCallback(async () => {

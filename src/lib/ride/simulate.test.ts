@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildChunks, evaluateChunk, heatPowerFactor } from './simulate';
+import { RIDE_PROFILES, deriveFtpW } from './zones';
 import { headwindKphFromWeather } from './wind';
 import { computeCurvyRanges, type SplitConfig } from '../chunking/strategies';
 import { withCumulativeKm } from '../gpx/geometry';
@@ -40,6 +41,7 @@ function evaluate(points: RoutePoint[], opts: Partial<Parameters<typeof evaluate
     autoAerobar: false,
     keepPowerSteady: true,
     heatEffect: false,
+    rideProfile: 'endurance',
     urbanRanges: [],
     curvyRanges: [],
     ...opts,
@@ -259,5 +261,28 @@ describe('wind at rider height', () => {
     };
     // Heading due north (0°) into a wind coming from the north => pure headwind.
     expect(headwindKphFromWeather(weather, 0)).toBeCloseTo(10 * WIND_HEIGHT_FACTOR * 3.6, 5);
+  });
+});
+
+describe('profile-driven effort model', () => {
+  // 15% climb, 1 km segment — steep enough that endurance hits its ceiling while hiit has room above it.
+  const climb = straightRoute([0, 150], 1);
+
+  it('endurance flat effort equals baseline power', () => {
+    const flat = straightRoute([100, 100], 1);
+    const chunk = evaluate(flat, { keepPowerSteady: false, rideProfile: 'endurance' });
+    expect(chunk.effectivePower).toBeCloseTo(200, 0);
+  });
+
+  it('endurance clamps a steep climb to the Z3 ceiling (90% FTP)', () => {
+    const chunk = evaluate(climb, { keepPowerSteady: false, rideProfile: 'endurance' });
+    const ceilingW = deriveFtpW(200) * RIDE_PROFILES.endurance.ceilingFraction;
+    expect(chunk.effectivePower).toBeCloseTo(ceilingW, 0);
+  });
+
+  it('high intensity allows more climb power than endurance', () => {
+    const enduranceChunk = evaluate(climb, { keepPowerSteady: false, rideProfile: 'endurance' });
+    const hiitChunk = evaluate(climb, { keepPowerSteady: false, rideProfile: 'hiit' });
+    expect(hiitChunk.effectivePower).toBeGreaterThan(enduranceChunk.effectivePower);
   });
 });

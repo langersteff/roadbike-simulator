@@ -1,6 +1,7 @@
 import type { Position, Surface } from '../../types';
 import { getTuning } from '../tuning';
 import { cappedVelocityKph, computeOutputs } from '../calc';
+import { RIDE_PROFILES, deriveFtpW, type RideProfileId } from './zones';
 import {
   URBAN_STOPS_PER_KM,
   STOP_DWELL_S,
@@ -43,7 +44,6 @@ export const ESTIMATED_AVG_KPH_INITIAL = 24;
 
 const POWER_UPHILL_PER_PERCENT = 0.04;
 const POWER_DOWNHILL_PER_PERCENT = 0.10;
-const POWER_MAX_FACTOR = 1.10;
 // Steep descents coast: power tapers to zero so terminal velocity (capped) governs the speed.
 const POWER_MIN_FACTOR = 0;
 
@@ -95,7 +95,7 @@ export function positionExplanation(chunk: Chunk, autoAerobar: boolean): string 
 
 export function powerFactorForGrade(gradePct: number): number {
   if (gradePct >= 0) {
-    return Math.min(POWER_MAX_FACTOR, 1 + gradePct * POWER_UPHILL_PER_PERCENT);
+    return 1 + gradePct * POWER_UPHILL_PER_PERCENT;
   }
   return Math.max(POWER_MIN_FACTOR, 1 + gradePct * POWER_DOWNHILL_PER_PERCENT);
 }
@@ -357,6 +357,7 @@ interface ChunkPhysicsParams {
   weather: WeatherSample | null;
   keepPowerSteady: boolean;
   heatEffect: boolean;
+  rideProfile: RideProfileId;
   gradeOverride?: number;
   powerOverride?: number;
   headwindOverrideKph?: number;
@@ -396,12 +397,18 @@ function integrateChunkPhysics(
     const segBearing = bearingDeg(from, to);
     const headwind = params.headwindOverrideKph ?? headwindKphFromWeather(params.weather, segBearing);
     const crosswind = crosswindKphFromWeather(params.weather, segBearing);
+    const ftpW = deriveFtpW(params.profile.baselinePower);
+    const spec = RIDE_PROFILES[params.rideProfile];
+    const effortFraction = Math.min(
+      spec.cruiseFraction * powerFactorForGrade(grade),
+      spec.ceilingFraction,
+    );
     const power =
       heatFactor *
       (params.powerOverride ??
         (params.keepPowerSteady
           ? params.profile.baselinePower
-          : params.profile.baselinePower * powerFactorForGrade(grade)));
+          : ftpW * effortFraction));
 
     const outputs = computeOutputs({
       id: 'segment',
@@ -440,7 +447,7 @@ function integrateChunkPhysics(
 }
 
 /** Extra time lost to stops at lights/junctions while riding through a settlement. */
-function urbanStopPenaltyMin(lengthKm: number): number {
+export function urbanStopPenaltyMin(lengthKm: number): number {
   return URBAN_STOPS_PER_KM * lengthKm * ((STOP_DWELL_S + STOP_ACCEL_PENALTY_S) / 60);
 }
 
@@ -454,6 +461,7 @@ interface BuildChunkOptions {
   autoAerobar: boolean;
   keepPowerSteady: boolean;
   heatEffect: boolean;
+  rideProfile: RideProfileId;
   urbanRanges: UrbanRange[];
   curvyRanges: IndexRange[];
   surfaces?: Surface[];
@@ -469,6 +477,7 @@ export function evaluateChunk({
   autoAerobar,
   keepPowerSteady,
   heatEffect,
+  rideProfile,
   urbanRanges,
   curvyRanges,
   surfaces,
@@ -514,6 +523,7 @@ export function evaluateChunk({
     weather,
     keepPowerSteady,
     heatEffect,
+    rideProfile,
     gradeOverride: overrides.gradePct,
     powerOverride: overrides.power,
     headwindOverrideKph: overrides.headwindKph,
@@ -567,6 +577,7 @@ interface SimulateOptions {
   autoAerobar: boolean;
   keepPowerSteady: boolean;
   heatEffect: boolean;
+  rideProfile: RideProfileId;
   urbanRanges: UrbanRange[];
   curvyRanges: IndexRange[];
   surfaces?: Surface[];
@@ -581,6 +592,7 @@ export function simulate({
   autoAerobar,
   keepPowerSteady,
   heatEffect,
+  rideProfile,
   urbanRanges,
   curvyRanges,
   surfaces,
@@ -596,6 +608,7 @@ export function simulate({
       autoAerobar,
       keepPowerSteady,
       heatEffect,
+      rideProfile,
       urbanRanges,
       curvyRanges,
       surfaces,
