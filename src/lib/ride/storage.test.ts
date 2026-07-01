@@ -38,7 +38,6 @@ const baseState = {
   profile: { riderWeight: 75, bikeWeight: 9, bodyHeightCm: 175, tire: 'clincher', defaultPosition: 'hoods' },
   chunks: [],
   colorScale: 'speed',
-  units: 'metric',
 };
 
 describe('loadRideState migration', () => {

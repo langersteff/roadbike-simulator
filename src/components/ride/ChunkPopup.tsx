@@ -1,11 +1,10 @@
 import type { Chunk, ChunkOverrides, RiderProfile } from '../../lib/ride/types';
-import type { Position, UnitSystem } from '../../types';
+import type { Position } from '../../types';
 import { POSITION_LABELS, SURFACE_LABELS } from '../../lib/constants';
 import { gradeCategory } from '../../lib/chunking/strategies';
 import { positionExplanation } from '../../lib/ride/simulate';
 import { setPositionOverride, setPowerOverride } from '../../lib/ride/overrides';
 import { formatMinutes } from '../../lib/uiCopy';
-import { speedDisplay, temperatureDisplay, UNIT_LABELS } from '../../lib/units';
 import { NumberInputRow, SelectInputRow } from '../InputRow';
 
 const POSITION_OPTIONS = (Object.keys(POSITION_LABELS) as Position[]).map((value) => ({
@@ -16,12 +15,11 @@ const POSITION_OPTIONS = (Object.keys(POSITION_LABELS) as Position[]).map((value
 interface ChunkPopupProps {
   chunk: Chunk;
   profile: RiderProfile;
-  units: UnitSystem;
   autoAerobar: boolean;
   onChange: (next: ChunkOverrides) => void;
 }
 
-export function ChunkPopup({ chunk, profile, units, autoAerobar, onChange }: ChunkPopupProps) {
+export function ChunkPopup({ chunk, profile, autoAerobar, onChange }: ChunkPopupProps) {
   const overrides = chunk.overrides;
   const powerOverridden = overrides.power !== undefined;
   const positionOverridden = overrides.position !== undefined;
@@ -91,13 +89,13 @@ export function ChunkPopup({ chunk, profile, units, autoAerobar, onChange }: Chu
           <dt>Wind</dt>
           <dd>
             {chunk.effectiveHeadwindKph >= 0 ? '+' : ''}
-            {speedDisplay(chunk.effectiveHeadwindKph, units).toFixed(1)} {UNIT_LABELS.speed(units)}
+            {chunk.effectiveHeadwindKph.toFixed(1)} km/h
           </dd>
         </div>
         <div>
           <dt>Temp</dt>
           <dd>
-            {temperatureDisplay(chunk.effectiveTemperatureC, units).toFixed(0)} {UNIT_LABELS.temperature(units)}
+            {chunk.effectiveTemperatureC.toFixed(0)} °C
           </dd>
         </div>
         <div>
@@ -111,7 +109,7 @@ export function ChunkPopup({ chunk, profile, units, autoAerobar, onChange }: Chu
         <div>
           <dt>Speed</dt>
           <dd className="chunk-popup__stat-strong">
-            {speedDisplay(chunk.effectiveVelocityKph, units).toFixed(1)} {UNIT_LABELS.speed(units)}
+            {chunk.effectiveVelocityKph.toFixed(1)} km/h
           </dd>
         </div>
         <div>

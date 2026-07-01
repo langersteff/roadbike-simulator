@@ -38,7 +38,7 @@ import type {
 import { loadRideState, saveRideState } from '../lib/ride/storage';
 import { computeLoadSummary } from '../lib/ride/load';
 import { deriveFtpW } from '../lib/ride/zones';
-import type { Surface, UnitSystem } from '../types';
+import type { Surface } from '../types';
 import { GpxUpload } from '../components/ride/GpxUpload';
 import { RiderProfileForm } from '../components/ride/RiderProfileForm';
 import { StartTimeInput } from '../components/ride/StartTimeInput';
@@ -128,7 +128,6 @@ const initialState = (): RideSimulatorState => {
     profile: DEFAULT_PROFILE,
     chunks: [],
     colorScale: 'speed',
-    units: 'metric',
     autoAerobar: false,
     keepPowerSteady: false,
     heatEffect: false,
@@ -663,7 +662,6 @@ export function RideSimulator() {
     mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const setUnits = (units: UnitSystem) => setState((prev) => ({ ...prev, units }));
   const setColorScale = (colorScale: ColorScale) => setState((prev) => ({ ...prev, colorScale }));
 
   const handleStartChange = (next: string) => {
@@ -699,20 +697,6 @@ export function RideSimulator() {
           <h1>Ride simulator</h1>
         </div>
         <div className="app__controls">
-          <div className="units-toggle">
-            <button
-              className={state.units === 'metric' ? 'active' : ''}
-              onClick={() => setUnits('metric')}
-            >
-              Metric
-            </button>
-            <button
-              className={state.units === 'imperial' ? 'active' : ''}
-              onClick={() => setUnits('imperial')}
-            >
-              U.S.
-            </button>
-          </div>
           <ModelInfoButton />
         </div>
       </header>
@@ -744,7 +728,6 @@ export function RideSimulator() {
         <h2 className="ride-section__title">Rider profile</h2>
         <RiderProfileForm
           profile={state.profile}
-          units={state.units}
           rideProfile={state.rideProfile ?? 'endurance'}
           onChange={handleProfileChange}
           onRideProfileChange={(rideProfile) => setState((prev) => ({ ...prev, rideProfile }))}
@@ -848,7 +831,6 @@ export function RideSimulator() {
             points={orientedPoints}
             chunks={state.chunks}
             startDateTime={state.startDateTime}
-            units={state.units}
             load={load}
         />
       </section>
@@ -865,7 +847,6 @@ export function RideSimulator() {
           chunks={state.chunks}
           colorScale={effectiveColorScale}
           profile={state.profile}
-          units={state.units}
           autoAerobar={state.autoAerobar ?? false}
           highlightChunkIndex={highlightedChunkIndex}
           hoveredPoint={hoveredPoint}
@@ -892,7 +873,6 @@ export function RideSimulator() {
         <ChunkList
           chunks={state.chunks}
           profile={state.profile}
-          units={state.units}
           autoAerobar={state.autoAerobar ?? false}
           curvyActive={state.split.curvy}
           highlightedIndex={highlightedChunkIndex}

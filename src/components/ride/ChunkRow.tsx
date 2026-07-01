@@ -1,19 +1,12 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Scissors, Combine, MapPin } from 'lucide-react';
 import type { Chunk, ChunkOverrides, RiderProfile } from '../../lib/ride/types';
-import type { Position, Surface, UnitSystem } from '../../types';
+import type { Position, Surface } from '../../types';
 import { POSITION_LABELS, SURFACE_LABELS } from '../../lib/constants';
 import { gradeCategory, type GradeCategory } from '../../lib/chunking/strategies';
 import { positionExplanation } from '../../lib/ride/simulate';
 import { InfoTooltip } from '../InfoTooltip';
 import { formatMinutes, WIND_SIGN_TOOLTIP } from '../../lib/uiCopy';
-import {
-  speedDisplay,
-  speedToKph,
-  temperatureDisplay,
-  temperatureToC,
-  UNIT_LABELS,
-} from '../../lib/units';
 import { NumberInputRow, SelectInputRow } from '../InputRow';
 
 const POSITION_OPTIONS = (Object.keys(POSITION_LABELS) as Position[]).map((value) => ({
@@ -29,7 +22,6 @@ const SURFACE_OPTIONS = (Object.keys(SURFACE_LABELS) as Surface[]).map((value) =
 interface ChunkRowProps {
   chunk: Chunk;
   profile: RiderProfile;
-  units: UnitSystem;
   autoAerobar: boolean;
   curvyActive: boolean;
   highlighted: boolean;
@@ -45,7 +37,6 @@ interface ChunkRowProps {
 export function ChunkRow({
   chunk,
   profile,
-  units,
   autoAerobar,
   curvyActive,
   highlighted,
@@ -155,28 +146,22 @@ export function ChunkRow({
             />
             <OverrideRow
               label="Head-/Tailwind"
-              suffix={UNIT_LABELS.speed(units)}
-              defaultValue={speedDisplay(chunk.effectiveHeadwindKph, units)}
-              overrideValue={
-                overrides.headwindKph !== undefined ? speedDisplay(overrides.headwindKph, units) : undefined
-              }
+              suffix="km/h"
+              defaultValue={chunk.effectiveHeadwindKph}
+              overrideValue={overrides.headwindKph}
               decimals={1}
               step={0.5}
               tooltip={WIND_SIGN_TOOLTIP}
-              onSet={(next) => patch({ headwindKph: speedToKph(next, units) })}
+              onSet={(next) => patch({ headwindKph: next })}
               onReset={() => reset('headwindKph')}
             />
             <OverrideRow
               label="Temperature"
-              suffix={UNIT_LABELS.temperature(units)}
-              defaultValue={temperatureDisplay(chunk.weather?.tempC ?? 15, units)}
-              overrideValue={
-                overrides.temperatureC !== undefined
-                  ? temperatureDisplay(overrides.temperatureC, units)
-                  : undefined
-              }
+              suffix="°C"
+              defaultValue={chunk.weather?.tempC ?? 15}
+              overrideValue={overrides.temperatureC}
               decimals={0}
-              onSet={(next) => patch({ temperatureC: temperatureToC(next, units) })}
+              onSet={(next) => patch({ temperatureC: next })}
               onReset={() => reset('temperatureC')}
             />
             <OverrideRow

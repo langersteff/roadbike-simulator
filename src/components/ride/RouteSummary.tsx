@@ -1,12 +1,5 @@
 import type { Chunk } from '../../lib/ride/types';
 import type { RoutePoint } from '../../lib/gpx/parse';
-import type { UnitSystem } from '../../types';
-import {
-  distanceDisplay,
-  elevationDisplay,
-  speedDisplay,
-  UNIT_LABELS,
-} from '../../lib/units';
 import { formatMinutes, SUMMARY_EMPTY, RIDE_LOAD_CAVEAT } from '../../lib/uiCopy';
 import type { LoadSummary } from '../../lib/ride/load';
 import { InfoTooltip } from '../InfoTooltip';
@@ -16,7 +9,6 @@ interface RouteSummaryProps {
   points: RoutePoint[];
   chunks: Chunk[];
   startDateTime: string;
-  units: UnitSystem;
   load: LoadSummary | null;
 }
 
@@ -41,7 +33,7 @@ function formatArrival(startDateTime: string, totalMin: number): string {
   return arrival.toLocaleString();
 }
 
-export function RouteSummary({ points, chunks, startDateTime, units, load }: RouteSummaryProps) {
+export function RouteSummary({ points, chunks, startDateTime, load }: RouteSummaryProps) {
   if (points.length === 0) {
     return <div className="route-summary route-summary--empty">{SUMMARY_EMPTY}</div>;
   }
@@ -57,13 +49,13 @@ export function RouteSummary({ points, chunks, startDateTime, units, load }: Rou
       <div className="route-summary__item">
         <span className="route-summary__label">Distance</span>
         <span className="route-summary__value">
-          {distanceDisplay(totalDistanceKm, units).toFixed(1)} {UNIT_LABELS.distance(units)}
+          {totalDistanceKm.toFixed(1)} km
         </span>
       </div>
       <div className="route-summary__item">
         <span className="route-summary__label">Elevation gain</span>
         <span className="route-summary__value">
-          {elevationDisplay(gainM, units).toFixed(0)} {UNIT_LABELS.elevation(units)}
+          {gainM.toFixed(0)} m
         </span>
       </div>
       <div className="route-summary__item">
@@ -73,7 +65,7 @@ export function RouteSummary({ points, chunks, startDateTime, units, load }: Rou
       <div className="route-summary__item">
         <span className="route-summary__label">Avg speed</span>
         <span className="route-summary__value">
-          {speedDisplay(avgKph, units).toFixed(1)} {UNIT_LABELS.speed(units)}
+          {avgKph.toFixed(1)} km/h
         </span>
       </div>
       <div className="route-summary__item">

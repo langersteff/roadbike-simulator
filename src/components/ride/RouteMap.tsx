@@ -4,7 +4,6 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { RoutePoint } from '../../lib/gpx/parse';
 import type { Chunk, ChunkOverrides, ColorScale, RiderProfile } from '../../lib/ride/types';
-import type { UnitSystem } from '../../types';
 import { chunkColors } from '../../lib/ride/colorScale';
 import { deriveFtpW } from '../../lib/ride/zones';
 import { ChunkPopup } from './ChunkPopup';
@@ -20,7 +19,6 @@ interface RouteMapProps {
   chunks: Chunk[];
   colorScale: ColorScale;
   profile: RiderProfile;
-  units: UnitSystem;
   autoAerobar: boolean;
   highlightChunkIndex: number | null;
   hoveredPoint: { lat: number; lon: number } | null;
@@ -69,7 +67,6 @@ export function RouteMap({
   chunks,
   colorScale,
   profile,
-  units,
   autoAerobar,
   highlightChunkIndex,
   hoveredPoint,
@@ -129,7 +126,6 @@ export function RouteMap({
                 <ChunkPopup
                   chunk={chunk}
                   profile={profile}
-                  units={units}
                   autoAerobar={autoAerobar}
                   onChange={(next) => onChunkOverrideChange(chunk.index, next)}
                 />

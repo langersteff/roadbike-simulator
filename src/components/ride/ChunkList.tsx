@@ -1,12 +1,10 @@
 import type { Chunk, ChunkOverrides, RiderProfile } from '../../lib/ride/types';
-import type { UnitSystem } from '../../types';
 import { ChunkRow } from './ChunkRow';
 import { CHUNKS_EMPTY } from '../../lib/uiCopy';
 
 interface ChunkListProps {
   chunks: Chunk[];
   profile: RiderProfile;
-  units: UnitSystem;
   autoAerobar: boolean;
   curvyActive: boolean;
   highlightedIndex: number | null;
@@ -20,7 +18,6 @@ interface ChunkListProps {
 export function ChunkList({
   chunks,
   profile,
-  units,
   autoAerobar,
   curvyActive,
   highlightedIndex,
@@ -52,7 +49,6 @@ export function ChunkList({
           key={chunk.index}
           chunk={chunk}
           profile={profile}
-          units={units}
           autoAerobar={autoAerobar}
           curvyActive={curvyActive}
           highlighted={highlightedIndex === chunk.index}

@@ -1,4 +1,4 @@
-import type { Position, Tire, Surface, UnitSystem } from '../../types';
+import type { Position, Tire, Surface } from '../../types';
 import type { RoutePoint } from '../gpx/parse';
 import type { WeatherSample } from '../weather/openMeteo';
 import type { SplitConfig } from '../chunking/strategies';
@@ -64,7 +64,6 @@ export interface RideSimulatorState {
   profile: RiderProfile;
   chunks: Chunk[];
   colorScale: ColorScale;
-  units: UnitSystem;
   autoAerobar?: boolean;
   keepPowerSteady?: boolean;
   heatEffect?: boolean;

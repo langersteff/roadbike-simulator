@@ -1,5 +1,3 @@
-export type UnitSystem = 'metric' | 'imperial';
-
 export type Tire = 'clincher' | 'gravel' | 'mtb';
 export type Surface = 'asphalt' | 'compacted' | 'gravel' | 'cobbles';
 export type Position = 'hoods' | 'bartops' | 'barends' | 'drops' | 'aerobar';
@@ -35,6 +33,5 @@ export interface CalculatorOutputs {
 }
 
 export interface AppState {
-  units: UnitSystem;
   calculators: CalculatorInputs[];
 }
