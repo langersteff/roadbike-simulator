@@ -21,6 +21,7 @@ const CRUISE_KEY: Record<RideProfileId, keyof TuningConfig> = {
   tempo: 'tempoCruise',
   hiit: 'hiitCruise',
 };
+const CRUISE_KEYS = Object.values(CRUISE_KEY);
 
 export function TuningPopup({ tuning, minSectionKm, maxSectionKm, rideProfile, onChange, onClose }: TuningPopupProps) {
   const [draft, setDraft] = useState<TuningConfig>(tuning);
@@ -63,17 +64,19 @@ export function TuningPopup({ tuning, minSectionKm, maxSectionKm, rideProfile, o
         {GROUPS.map((group) => (
           <div key={group} className="tuning-group">
             <h4 className="tuning-group__title">{group}</h4>
-            {TUNING_KNOBS.filter(
-              (knob) =>
-                knob.group === group &&
-                (group !== 'Ride effort' || knob.key === CRUISE_KEY[rideProfile]),
-            ).map((knob) => {
+            {TUNING_KNOBS.filter((knob) => {
+              if (knob.group !== group) return false;
+              // In Ride effort, hide the cruise knobs for the non-selected profiles; keep the rest.
+              const isOtherProfileCruise =
+                CRUISE_KEYS.includes(knob.key) && knob.key !== CRUISE_KEY[rideProfile];
+              return !isOtherProfileCruise;
+            }).map((knob) => {
               const toDisplay = knob.toDisplay ?? ((value: number) => value);
               const fromDisplay = knob.fromDisplay ?? ((value: number) => value);
               return (
                 <KnobRow
                   key={knob.key}
-                  label={group === 'Ride effort' ? 'Cruise Effort (% FTP)' : knob.label}
+                  label={CRUISE_KEYS.includes(knob.key) ? 'Cruise Effort (% FTP)' : knob.label}
                   help={knob.help}
                   min={knob.min}
                   max={knob.max}

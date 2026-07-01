@@ -24,6 +24,9 @@ export interface TuningConfig {
   enduranceCruise: number;
   tempoCruise: number;
   hiitCruise: number;
+  /** How sharply a climb raises effort: FTP-fraction added per 1% of grade. Lower = zones jump at
+   *  steeper grades (Z3 arrives later). */
+  climbDemandPerPercent: number;
 }
 
 export const DEFAULT_TUNING: TuningConfig = {
@@ -36,6 +39,7 @@ export const DEFAULT_TUNING: TuningConfig = {
   enduranceCruise: RIDE_PROFILES.endurance.cruiseFraction,
   tempoCruise: RIDE_PROFILES.tempo.cruiseFraction,
   hiitCruise: RIDE_PROFILES.hiit.cruiseFraction,
+  climbDemandPerPercent: 0.045,
 };
 
 export interface TuningKnob {
@@ -85,6 +89,9 @@ export const TUNING_KNOBS: TuningKnob[] = [
   { key: 'hiitCruise', label: 'High-intensity cruise (% FTP)', group: 'Ride effort', min: 40, max: 100, step: 1,
     help: 'Flat effort between the hard efforts on High-intensity rides.',
     toDisplay: (fraction) => Math.round(fraction * 100), fromDisplay: (pct) => pct / 100 },
+  { key: 'climbDemandPerPercent', label: 'Climb rise (% FTP per 1% grade)', group: 'Ride effort', min: 1, max: 10, step: 0.5,
+    help: 'How sharply climbs raise the zone. Lower = the jump to Z3 needs a steeper grade.',
+    toDisplay: (fraction) => Math.round(fraction * 1000) / 10, fromDisplay: (perPct) => perPct / 100 },
 ];
 
 const STORAGE_KEY = 'bikecalc.tuning.v1';

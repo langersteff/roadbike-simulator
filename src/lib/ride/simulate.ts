@@ -58,13 +58,13 @@ const CROSSWIND_EFFORT_WEIGHT = 0.5;
 // Climbing forces a minimum intensity that is independent of how easily the rider spins on the
 // flat: gravity sets the floor, not the cruise effort. This grade→%FTP "climb demand" is the floor
 // the rider is pushed to on an ascent; effort is the max of it and the (cruise-based) flat effort,
-// then capped by the profile ceiling. Anchored so a ~3% grade already reaches Zone 3.
+// then capped by the profile ceiling. Anchored so a ~3% grade reaches Zone 3 at the default rise;
+// the per-grade rise is live-tunable (lower = the jump to Z3 needs a steeper grade).
 const CLIMB_DEMAND_BASE = 0.62;
-const CLIMB_DEMAND_PER_PERCENT = 0.045;
 
 export function climbDemandFraction(gradePct: number): number {
   if (gradePct <= 0) return 0;
-  return CLIMB_DEMAND_BASE + gradePct * CLIMB_DEMAND_PER_PERCENT;
+  return CLIMB_DEMAND_BASE + gradePct * getTuning().climbDemandPerPercent;
 }
 
 const RAIN_CRR_PER_MMH = 0.015;
