@@ -39,15 +39,24 @@ function formatIntervalsDuration(min: number): string {
   return `${minutes}m`;
 }
 
+// Our open-ended Z5 collapses intervals.icu's Z5/Z6/Z7. Their power Z5 covers the low end,
+// so the power label is fine, but heart rate saturates across all three — emitting "Z5 HR"
+// would pin the whole band to their VO2max zone. Emit an HR percentage range instead.
+const Z5_HR_RANGE = '91%-100%';
+
 // Builds an intervals.icu workout description from time-in-zone, one step per zone with time.
-// HR target appends " HR" so intervals.icu reads the same Z1..Z5 bands as heart-rate zones.
+// Z1..Z4 align 1:1 with intervals.icu; the HR target appends " HR" and swaps the collapsed
+// Z5 label for its percentage range.
 export function buildZoneIntervalsText(
   zoneMinutes: Readonly<Record<ZoneId, number>>,
   target: 'power' | 'hr',
 ): string {
   const suffix = target === 'hr' ? ' HR' : '';
   return ZONE_IDS.filter((id) => Math.round(zoneMinutes[id]) > 0)
-    .map((id) => `- ${formatIntervalsDuration(zoneMinutes[id])} ${id}${suffix}`)
+    .map((id) => {
+      const label = target === 'hr' && id === 'Z5' ? Z5_HR_RANGE : id;
+      return `- ${formatIntervalsDuration(zoneMinutes[id])} ${label}${suffix}`;
+    })
     .join('\n');
 }
 

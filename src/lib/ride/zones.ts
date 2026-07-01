@@ -55,5 +55,5 @@ export const RIDE_PROFILES: Record<RideProfileId, RideProfileSpec> = {
   easyEndurance: { cruiseFraction: 0.4, ceilingFraction: 0.90, climbRise: 0.015, label: 'Easy endurance' },
   endurance: { cruiseFraction: 0.55, ceilingFraction: 0.90, climbRise: 0.025, label: 'Endurance' },
   tempo: { cruiseFraction: 0.78, ceilingFraction: 1.05, climbRise: 0.045, label: 'Tempo' },
-  hiit: { cruiseFraction: 0.65, ceilingFraction: 1.20, climbRise: 0.045, label: 'High intensity' },
+  hiit: { cruiseFraction: 0.65, ceilingFraction: 1.20, climbRise: 0.05, label: 'High intensity' },
 };

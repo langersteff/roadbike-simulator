@@ -16,6 +16,16 @@ describe('buildZoneIntervalsText', () => {
     );
   });
 
+  it('emits Z5 as an HR percentage range but keeps the Z5 power label', () => {
+    const zoneMinutes = { Z1: 0, Z2: 0, Z3: 0, Z4: 40, Z5: 15 };
+    expect(buildZoneIntervalsText(zoneMinutes, 'hr')).toBe(
+      ['- 40m Z4 HR', '- 15m 91%-100% HR'].join('\n'),
+    );
+    expect(buildZoneIntervalsText(zoneMinutes, 'power')).toBe(
+      ['- 40m Z4', '- 15m Z5'].join('\n'),
+    );
+  });
+
   it('skips zones that round to zero minutes', () => {
     const zoneMinutes = { Z1: 0.4, Z2: 20, Z3: 0, Z4: 0, Z5: 0 };
     expect(buildZoneIntervalsText(zoneMinutes, 'power')).toBe('- 20m Z2');
