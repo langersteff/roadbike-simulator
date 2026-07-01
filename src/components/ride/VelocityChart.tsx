@@ -4,6 +4,7 @@ import {
   CartesianGrid,
   ComposedChart,
   Line,
+  ReferenceArea,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -16,6 +17,7 @@ import type { RoutePoint } from '../../lib/gpx/parse';
 import type { Chunk } from '../../lib/ride/types';
 import type { DaylightWindow } from '../../lib/weather/openMeteo';
 import { crosswindKphFromWeather, headwindKphFromWeather } from '../../lib/ride/wind';
+import { zoneForFraction, ZONE_META } from '../../lib/ride/zones';
 import { formatMinutes, VELOCITY_EMPTY } from '../../lib/uiCopy';
 
 interface VelocityChartProps {
@@ -23,7 +25,23 @@ interface VelocityChartProps {
   routePoints: RoutePoint[];
   startDateTime: string;
   daylightWindows: DaylightWindow[];
+  ftpW: number;
   onHoverKm?: (km: number | null) => void;
+}
+
+interface ZoneBand {
+  startKm: number;
+  endKm: number;
+  color: string;
+}
+
+function zoneBands(chunks: Chunk[], ftpW: number): ZoneBand[] {
+  if (ftpW <= 0) return [];
+  return chunks.map((chunk) => ({
+    startKm: chunk.startKm,
+    endKm: chunk.endKm,
+    color: ZONE_META[zoneForFraction(chunk.effectivePower / ftpW)].color,
+  }));
 }
 
 type MetricKey = 'velocity' | 'wind' | 'crosswind' | 'rain' | 'elevation' | 'temperature' | 'daylight';
@@ -208,12 +226,14 @@ function ChunkTooltip({ active, payload, chunks, startDateTime }: TooltipProps) 
   );
 }
 
-export function VelocityChart({ chunks, routePoints, startDateTime, daylightWindows, onHoverKm }: VelocityChartProps) {
+export function VelocityChart({ chunks, routePoints, startDateTime, daylightWindows, ftpW, onHoverKm }: VelocityChartProps) {
   const data = useMemo(
     () => buildPoints(chunks, routePoints, startDateTime, daylightWindows),
     [chunks, routePoints, startDateTime, daylightWindows],
   );
+  const bands = useMemo(() => zoneBands(chunks, ftpW), [chunks, ftpW]);
   const [shown, setShown] = useState<Set<MetricKey>>(() => new Set<MetricKey>(['velocity']));
+  const [showZones, setShowZones] = useState(false);
 
   if (chunks.length === 0) {
     return <div className="velocity-chart velocity-chart--empty">{VELOCITY_EMPTY}</div>;
@@ -256,6 +276,14 @@ export function VelocityChart({ chunks, routePoints, startDateTime, daylightWind
             {metric.label}
           </label>
         ))}
+        <label className="velocity-chart__toggle">
+          <input type="checkbox" checked={showZones} onChange={() => setShowZones((value) => !value)} />
+          <span className="velocity-chart__swatch-split">
+            <span style={{ background: ZONE_META.Z2.color }} />
+            <span style={{ background: ZONE_META.Z4.color }} />
+          </span>
+          Zones
+        </label>
       </div>
       <ResponsiveContainer width="100%" height={260}>
         <ComposedChart
@@ -276,6 +304,19 @@ export function VelocityChart({ chunks, routePoints, startDateTime, daylightWind
           onMouseLeave={() => onHoverKm?.(null)}
         >
           <CartesianGrid stroke="#e1e4ea" strokeDasharray="3 3" />
+          {showZones &&
+            bands.map((band, index) => (
+              <ReferenceArea
+                key={index}
+                yAxisId="speed"
+                x1={band.startKm}
+                x2={band.endKm}
+                fill={band.color}
+                fillOpacity={0.22}
+                stroke="none"
+                ifOverflow="extendDomain"
+              />
+            ))}
           <XAxis
             dataKey="km"
             type="number"

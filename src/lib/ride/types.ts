@@ -5,7 +5,7 @@ import type { SplitConfig } from '../chunking/strategies';
 import type { PlaceNode } from '../osm/overpass';
 import type { RideProfileId } from './zones';
 
-export type ColorScale = 'speed' | 'grade' | 'aerobar' | 'curvy';
+export type ColorScale = 'speed' | 'grade' | 'aerobar' | 'curvy' | 'zone';
 
 export interface RiderProfile {
   riderWeight: number;

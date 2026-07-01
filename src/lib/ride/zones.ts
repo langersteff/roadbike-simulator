@@ -24,6 +24,22 @@ export function zoneForFraction(fractionOfFtp: number): ZoneId {
   return match ? match.id : 'Z5';
 }
 
+export interface ZoneMeta {
+  name: string;
+  rangeLabel: string;
+  color: string;
+}
+
+// Display metadata for the time-in-zone breakdown. rangeLabel mirrors the %FTP bands in
+// ZONE_UPPER_BOUNDS; colors run cool→hot to match how training platforms shade intensity.
+export const ZONE_META: Record<ZoneId, ZoneMeta> = {
+  Z1: { name: 'Recovery', rangeLabel: '<55%', color: '#2bb3a3' },
+  Z2: { name: 'Endurance', rangeLabel: '55–75%', color: '#4caf50' },
+  Z3: { name: 'Tempo', rangeLabel: '76–90%', color: '#f4d03f' },
+  Z4: { name: 'Threshold', rangeLabel: '91–105%', color: '#ef9234' },
+  Z5: { name: 'VO2max+', rangeLabel: '≥106%', color: '#e0455e' },
+};
+
 export interface RideProfileSpec {
   cruiseFraction: number;
   ceilingFraction: number;

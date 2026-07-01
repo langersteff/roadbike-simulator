@@ -6,6 +6,7 @@ import type { RoutePoint } from '../../lib/gpx/parse';
 import type { Chunk, ChunkOverrides, ColorScale, RiderProfile } from '../../lib/ride/types';
 import type { UnitSystem } from '../../types';
 import { chunkColors } from '../../lib/ride/colorScale';
+import { deriveFtpW } from '../../lib/ride/zones';
 import { ChunkPopup } from './ChunkPopup';
 
 export interface JumpRequest {
@@ -75,7 +76,10 @@ export function RouteMap({
   jumpRequest,
   onChunkOverrideChange,
 }: RouteMapProps) {
-  const colors = useMemo(() => chunkColors(chunks, colorScale), [chunks, colorScale]);
+  const colors = useMemo(
+    () => chunkColors(chunks, colorScale, deriveFtpW(profile.baselinePower)),
+    [chunks, colorScale, profile.baselinePower],
+  );
 
   if (points.length === 0) {
     return (

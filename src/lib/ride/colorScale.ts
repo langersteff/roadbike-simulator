@@ -1,5 +1,6 @@
 import type { ColorScale } from './types';
 import type { Chunk } from './types';
+import { zoneForFraction, ZONE_META } from './zones';
 
 interface ChunkMetric {
   metric: number;
@@ -42,8 +43,14 @@ function metricFor(chunk: Chunk, scale: ColorScale): ChunkMetric {
   return { metric: chunk.effectiveGradePct, diverging: true };
 }
 
-export function chunkColors(chunks: Chunk[], scale: ColorScale): string[] {
+export function chunkColors(chunks: Chunk[], scale: ColorScale, ftpW = 0): string[] {
   if (chunks.length === 0) return [];
+
+  if (scale === 'zone') {
+    return chunks.map((chunk) =>
+      ftpW > 0 ? ZONE_META[zoneForFraction(chunk.effectivePower / ftpW)].color : INACTIVE_COLOR,
+    );
+  }
 
   if (scale === 'aerobar') {
     return chunks.map((chunk) =>

@@ -9,8 +9,8 @@ import {
 } from '../../lib/units';
 import { formatMinutes, SUMMARY_EMPTY, RIDE_LOAD_CAVEAT } from '../../lib/uiCopy';
 import type { LoadSummary } from '../../lib/ride/load';
-import { ZONE_IDS } from '../../lib/ride/zones';
 import { InfoTooltip } from '../InfoTooltip';
+import { ZoneBreakdown } from './ZoneBreakdown';
 
 interface RouteSummaryProps {
   points: RoutePoint[];
@@ -52,6 +52,7 @@ export function RouteSummary({ points, chunks, startDateTime, units, load }: Rou
   const avgKph = totalMin > 0 ? (totalDistanceKm / totalMin) * 60 : 0;
 
   return (
+    <>
     <div className="route-summary">
       <div className="route-summary__item">
         <span className="route-summary__label">Distance</span>
@@ -104,14 +105,15 @@ export function RouteSummary({ points, chunks, startDateTime, units, load }: Rou
             <span className="route-summary__label">Estimated FTP</span>
             <span className="route-summary__value">{Math.round(load.ftpW)} W</span>
           </div>
-          <div className="route-summary__item">
-            <span className="route-summary__label">Time in zone</span>
-            <span className="route-summary__value">
-              {ZONE_IDS.map((id) => `${id} ${Math.round(load.zoneMinutes[id])}m`).join(' · ')}
-            </span>
-          </div>
         </>
       )}
     </div>
+    {load && (
+      <div className="route-summary__zones">
+        <span className="route-summary__zones-title">Time in zone</span>
+        <ZoneBreakdown load={load} />
+      </div>
+    )}
+    </>
   );
 }

@@ -41,7 +41,6 @@ import { deriveFtpW } from '../lib/ride/zones';
 import type { Surface, UnitSystem } from '../types';
 import { GpxUpload } from '../components/ride/GpxUpload';
 import { RiderProfileForm } from '../components/ride/RiderProfileForm';
-import { RideProfilePicker } from '../components/ride/RideProfilePicker';
 import { StartTimeInput } from '../components/ride/StartTimeInput';
 import { SplitStrategyPicker } from '../components/ride/SplitStrategyPicker';
 import { TuningPopup } from '../components/ride/TuningPopup';
@@ -598,7 +597,7 @@ export function RideSimulator() {
       reSimulate(overridesByChunk, ranges, weatherByChunk);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.profile, state.autoAerobar, state.keepPowerSteady, state.heatEffect]);
+  }, [state.profile, state.rideProfile, state.autoAerobar, state.keepPowerSteady, state.heatEffect]);
 
   const handleOverrideChange = (chunkIndex: number, next: ChunkOverrides) => {
     const nextOverrides = { ...overridesByChunk, [chunkIndex]: next };
@@ -742,10 +741,12 @@ export function RideSimulator() {
 
       <section className="ride-section">
         <h2 className="ride-section__title">Rider profile</h2>
-        <RiderProfileForm profile={state.profile} units={state.units} onChange={handleProfileChange} />
-        <RideProfilePicker
-          value={state.rideProfile ?? 'endurance'}
-          onChange={(rideProfile) => setState((prev) => ({ ...prev, rideProfile }))}
+        <RiderProfileForm
+          profile={state.profile}
+          units={state.units}
+          rideProfile={state.rideProfile ?? 'endurance'}
+          onChange={handleProfileChange}
+          onRideProfileChange={(rideProfile) => setState((prev) => ({ ...prev, rideProfile }))}
         />
         <label className="reverse-toggle">
           <input
@@ -874,12 +875,13 @@ export function RideSimulator() {
           routePoints={orientedPoints}
           startDateTime={state.startDateTime}
           daylightWindows={daylightWindows}
+          ftpW={deriveFtpW(state.profile.baselinePower)}
           onHoverKm={setHoveredKm}
         />
       </section>
 
-      <section className="ride-section">
-        <h2 className="ride-section__title">Chunks</h2>
+      <details className="ride-section ride-section--collapsible">
+        <summary className="ride-section__title ride-section__summary">Chunks</summary>
         <ChunkList
           chunks={state.chunks}
           profile={state.profile}
@@ -893,7 +895,7 @@ export function RideSimulator() {
           onMergeWithNext={handleMergeWithNext}
           onJumpToChunk={handleJumpToChunk}
         />
-      </section>
+      </details>
     </div>
   );
 }

@@ -9,6 +9,7 @@ interface ColorScaleToggleProps {
 const OPTIONS: Array<{ value: ColorScale; label: string }> = [
   { value: 'speed', label: 'Speed' },
   { value: 'grade', label: 'Grade' },
+  { value: 'zone', label: 'Zone' },
   { value: 'aerobar', label: 'Aerobar' },
   { value: 'curvy', label: 'Curvy' },
 ];
