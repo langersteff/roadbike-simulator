@@ -18,8 +18,11 @@ import type { Chunk } from '../../lib/ride/types';
 import type { DaylightWindow } from '../../lib/weather/openMeteo';
 import { crosswindKphFromWeather, headwindKphFromWeather } from '../../lib/ride/wind';
 import { zoneForFraction, ZONE_META } from '../../lib/ride/zones';
+import { exhaustionByChunk, exhaustionAtKm } from '../../lib/ride/exhaustion';
 import { ZoneLegend } from './ZoneLegend';
 import { formatMinutes, VELOCITY_EMPTY } from '../../lib/uiCopy';
+
+const EXHAUSTION_COLOR = '#b91c1c';
 
 interface VelocityChartProps {
   chunks: Chunk[];
@@ -27,6 +30,8 @@ interface VelocityChartProps {
   startDateTime: string;
   daylightWindows: DaylightWindow[];
   ftpW: number;
+  modelExhaustion: boolean;
+  riderWeightKg: number;
   onHoverKm?: (km: number | null) => void;
 }
 
@@ -227,14 +232,29 @@ function ChunkTooltip({ active, payload, chunks, startDateTime }: TooltipProps) 
   );
 }
 
-export function VelocityChart({ chunks, routePoints, startDateTime, daylightWindows, ftpW, onHoverKm }: VelocityChartProps) {
+export function VelocityChart({
+  chunks,
+  routePoints,
+  startDateTime,
+  daylightWindows,
+  ftpW,
+  modelExhaustion,
+  riderWeightKg,
+  onHoverKm,
+}: VelocityChartProps) {
   const data = useMemo(
     () => buildPoints(chunks, routePoints, startDateTime, daylightWindows),
     [chunks, routePoints, startDateTime, daylightWindows],
   );
   const bands = useMemo(() => zoneBands(chunks, ftpW), [chunks, ftpW]);
+  const chartData = useMemo(() => {
+    if (!modelExhaustion || ftpW <= 0) return data;
+    const byChunk = exhaustionByChunk(chunks, riderWeightKg, ftpW);
+    return data.map((point) => ({ ...point, exhaustion: exhaustionAtKm(point.km, chunks, byChunk) }));
+  }, [data, modelExhaustion, chunks, riderWeightKg, ftpW]);
   const [shown, setShown] = useState<Set<MetricKey>>(() => new Set<MetricKey>(['velocity']));
   const [showZones, setShowZones] = useState(false);
+  const [showExhaustion, setShowExhaustion] = useState(false);
 
   if (chunks.length === 0) {
     return <div className="velocity-chart velocity-chart--empty">{VELOCITY_EMPTY}</div>;
@@ -285,10 +305,21 @@ export function VelocityChart({ chunks, routePoints, startDateTime, daylightWind
           </span>
           Zones
         </label>
+        {modelExhaustion && (
+          <label className="velocity-chart__toggle">
+            <input
+              type="checkbox"
+              checked={showExhaustion}
+              onChange={() => setShowExhaustion((value) => !value)}
+            />
+            <span className="velocity-chart__swatch" style={{ background: EXHAUSTION_COLOR }} />
+            Exhaustion
+          </label>
+        )}
       </div>
       <ResponsiveContainer width="100%" height={260}>
         <ComposedChart
-          data={data}
+          data={chartData}
           margin={{ top: 8, right: 24, bottom: 8, left: 0 }}
           onMouseMove={(handlerState) => {
             if (!onHoverKm) return;
@@ -298,8 +329,8 @@ export function VelocityChart({ chunks, routePoints, startDateTime, daylightWind
               return;
             }
             const idx = handlerState?.activeTooltipIndex;
-            if (typeof idx === 'number' && data[idx]) {
-              onHoverKm(data[idx].km);
+            if (typeof idx === 'number' && chartData[idx]) {
+              onHoverKm(chartData[idx].km);
             }
           }}
           onMouseLeave={() => onHoverKm?.(null)}
@@ -383,6 +414,16 @@ export function VelocityChart({ chunks, routePoints, startDateTime, daylightWind
             stroke="#eab308"
             tickLine={false}
             hide={!showDaylightAxis}
+          />
+          <YAxis
+            yAxisId="exhaustion"
+            orientation="right"
+            domain={[0, 100]}
+            tickFormatter={(value: number) => value.toFixed(0)}
+            label={{ value: '% exhausted', angle: -90, position: 'insideRight', fill: EXHAUSTION_COLOR }}
+            stroke={EXHAUSTION_COLOR}
+            tickLine={false}
+            hide={!(modelExhaustion && showExhaustion)}
           />
           <Tooltip content={<ChunkTooltip chunks={chunks} startDateTime={startDateTime} />} />
           {shown.has('daylight') && (
@@ -488,6 +529,17 @@ export function VelocityChart({ chunks, routePoints, startDateTime, daylightWind
               strokeWidth={2}
               strokeDasharray="2 4"
               strokeLinejoin="round"
+              dot={false}
+              isAnimationActive={false}
+            />
+          )}
+          {modelExhaustion && showExhaustion && (
+            <Line
+              type="monotone"
+              dataKey="exhaustion"
+              yAxisId="exhaustion"
+              stroke={EXHAUSTION_COLOR}
+              strokeWidth={2}
               dot={false}
               isAnimationActive={false}
             />

@@ -78,6 +78,13 @@ const HEAT_EFFECT_TOOLTIP = [
   'When OFF (default): only air density applies, so warmer (thinner) air reads slightly faster.',
 ].join('\n');
 
+const EXHAUSTION_TOOLTIP = [
+  'Estimates a 0–100 exhaustion level from cumulative carbohydrate (glycogen) depletion:',
+  'harder sections near threshold burn glycogen far faster than easy Zone 2 spinning.',
+  'Toggle the Exhaustion line on the graph. Topping out at 100 well before the end means',
+  'you would likely fade. Display-only — it does not change simulated speed or load.',
+].join('\n');
+
 const AERO_RULES_TOOLTIP = [
   'Auto-pick aerobar when ALL of these hold for the chunk:',
   '• Length ≥ 0.5 km',
@@ -119,6 +126,7 @@ const initialState = (): RideSimulatorState => {
       autoAerobar: stored.autoAerobar ?? false,
       keepPowerSteady: stored.keepPowerSteady ?? false,
       heatEffect: stored.heatEffect ?? false,
+      modelExhaustion: stored.modelExhaustion ?? false,
     };
   }
   return {
@@ -132,6 +140,7 @@ const initialState = (): RideSimulatorState => {
     autoAerobar: false,
     keepPowerSteady: false,
     heatEffect: false,
+    modelExhaustion: false,
   };
 };
 
@@ -785,6 +794,17 @@ export function RideSimulator() {
         <label className="reverse-toggle">
           <input
             type="checkbox"
+            checked={state.modelExhaustion ?? false}
+            onChange={(event) =>
+              setState((prev) => ({ ...prev, modelExhaustion: event.target.checked }))
+            }
+          />
+          Model exhaustion
+          <InfoTooltip content={EXHAUSTION_TOOLTIP} label="How the exhaustion estimate works" />
+        </label>
+        <label className="reverse-toggle">
+          <input
+            type="checkbox"
             checked={hasSurfaces}
             disabled={busy || orientedPoints.length < 2}
             onChange={(event) => {
@@ -878,6 +898,8 @@ export function RideSimulator() {
           startDateTime={state.startDateTime}
           daylightWindows={daylightWindows}
           ftpW={deriveFtpW(state.profile.baselinePower)}
+          modelExhaustion={state.modelExhaustion ?? false}
+          riderWeightKg={state.profile.riderWeight}
           onHoverKm={setHoveredKm}
         />
       </section>
