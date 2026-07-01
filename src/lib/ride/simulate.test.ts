@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildChunks, evaluateChunk, heatPowerFactor } from './simulate';
+import { buildChunks, evaluateChunk, heatPowerFactor, windPowerFactor } from './simulate';
 import { RIDE_PROFILES, deriveFtpW } from './zones';
 import { headwindKphFromWeather } from './wind';
 import { computeCurvyRanges, type SplitConfig } from '../chunking/strategies';
@@ -298,5 +298,34 @@ describe('profile-driven effort model', () => {
     const flat = straightRoute([100, 100], 1);
     const chunk = evaluate(flat, { keepPowerSteady: false, rideProfile: 'endurance' });
     expect(chunk.powerFourthMean! ** 0.25).toBeCloseTo(chunk.effectivePower, 0);
+  });
+});
+
+describe('windPowerFactor', () => {
+  it('is neutral in calm and tailwind', () => {
+    expect(windPowerFactor(0, 0)).toBe(1);
+    expect(windPowerFactor(-20, 0)).toBe(1);
+  });
+
+  it('raises effort with headwind and (at reduced weight) crosswind', () => {
+    expect(windPowerFactor(25, 0)).toBeCloseTo(1.3, 5);
+    expect(windPowerFactor(0, 10)).toBeCloseTo(1.06, 5);
+  });
+
+  it('caps the wind-driven bump', () => {
+    expect(windPowerFactor(100, 0)).toBeCloseTo(1.5, 5);
+  });
+});
+
+describe('wind raises effort power', () => {
+  it('a headwind lifts flat-ground power', () => {
+    const flat = straightRoute([100, 100], 1);
+    const calm = evaluate(flat, { keepPowerSteady: false, rideProfile: 'tempo' });
+    const windy = evaluate(flat, {
+      keepPowerSteady: false,
+      rideProfile: 'tempo',
+      overrides: { headwindKph: 25 },
+    });
+    expect(windy.effectivePower).toBeGreaterThan(calm.effectivePower);
   });
 });

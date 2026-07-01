@@ -47,6 +47,14 @@ const POWER_DOWNHILL_PER_PERCENT = 0.10;
 // Steep descents coast: power tapers to zero so terminal velocity (capped) governs the speed.
 const POWER_MIN_FACTOR = 0;
 
+// A constant-effort rider pushes harder into a headwind, the same way they do on a climb — so wind
+// raises power (and thus the training zone), not just lowers speed. Crosswind adds some aero drag
+// too, but a rider leans into it less than a pure headwind, so it counts at a reduced weight.
+// Tailwind is ignored here (the rider coasts the gift rather than shedding power below cruise).
+const WIND_POWER_PER_KPH = 0.012;
+const WIND_POWER_MAX_FACTOR = 1.5;
+const CROSSWIND_EFFORT_WEIGHT = 0.5;
+
 const RAIN_CRR_PER_MMH = 0.015;
 const RAIN_CRR_MAX_FACTOR = 1.30;
 
@@ -98,6 +106,12 @@ export function powerFactorForGrade(gradePct: number): number {
     return 1 + gradePct * POWER_UPHILL_PER_PERCENT;
   }
   return Math.max(POWER_MIN_FACTOR, 1 + gradePct * POWER_DOWNHILL_PER_PERCENT);
+}
+
+export function windPowerFactor(headwindKph: number, crosswindKph: number): number {
+  const effectiveHeadwind = headwindKph + CROSSWIND_EFFORT_WEIGHT * Math.abs(crosswindKph);
+  if (effectiveHeadwind <= 0) return 1;
+  return Math.min(WIND_POWER_MAX_FACTOR, 1 + effectiveHeadwind * WIND_POWER_PER_KPH);
 }
 
 export function crrMultiplierForRain(precipitationMmH: number): number {
@@ -405,7 +419,7 @@ function integrateChunkPhysics(
     const ftpW = deriveFtpW(params.profile.baselinePower);
     const spec = RIDE_PROFILES[params.rideProfile];
     const effortFraction = Math.min(
-      spec.cruiseFraction * powerFactorForGrade(grade),
+      spec.cruiseFraction * powerFactorForGrade(grade) * windPowerFactor(headwind, crosswind),
       spec.ceilingFraction,
     );
     const power =

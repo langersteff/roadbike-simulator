@@ -350,7 +350,7 @@ export function VelocityChart({
                 x1={band.startKm}
                 x2={band.endKm}
                 fill={band.color}
-                fillOpacity={0.22}
+                fillOpacity={0.45}
                 stroke="none"
                 ifOverflow="extendDomain"
               />
