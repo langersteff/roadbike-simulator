@@ -1,0 +1,39 @@
+export type ZoneId = 'Z1' | 'Z2' | 'Z3' | 'Z4' | 'Z5';
+export type RideProfileId = 'endurance' | 'tempo' | 'hiit';
+
+export const ZONE_IDS: ZoneId[] = ['Z1', 'Z2', 'Z3', 'Z4', 'Z5'];
+
+// Baseline Power is entered as the rider's mid-Zone-2 effort, which sits at ~65% of FTP,
+// so FTP is the baseline scaled back up by that fraction.
+export const Z2_MID_FRACTION = 0.65;
+
+export function deriveFtpW(baselinePowerW: number): number {
+  return baselinePowerW / Z2_MID_FRACTION;
+}
+
+// Upper bounds (exclusive) of each zone as a fraction of FTP; Z5 is open-ended.
+const ZONE_UPPER_BOUNDS: Array<{ id: ZoneId; below: number }> = [
+  { id: 'Z1', below: 0.55 },
+  { id: 'Z2', below: 0.76 },
+  { id: 'Z3', below: 0.91 },
+  { id: 'Z4', below: 1.06 },
+];
+
+export function zoneForFraction(fractionOfFtp: number): ZoneId {
+  const match = ZONE_UPPER_BOUNDS.find((zone) => fractionOfFtp < zone.below);
+  return match ? match.id : 'Z5';
+}
+
+export interface RideProfileSpec {
+  cruiseFraction: number;
+  ceilingFraction: number;
+  label: string;
+}
+
+// cruiseFraction: effort on flat ground as a fraction of FTP (scaled by grade below).
+// ceilingFraction: hardest sustained climb effort the profile allows.
+export const RIDE_PROFILES: Record<RideProfileId, RideProfileSpec> = {
+  endurance: { cruiseFraction: 0.65, ceilingFraction: 0.90, label: 'Endurance' },
+  tempo: { cruiseFraction: 0.78, ceilingFraction: 1.05, label: 'Tempo' },
+  hiit: { cruiseFraction: 0.65, ceilingFraction: 1.20, label: 'High intensity' },
+};
