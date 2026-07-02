@@ -7,8 +7,10 @@ import {
   buildZoneIntervalsText,
   SUMMARY_EMPTY,
   RIDE_LOAD_CAVEAT,
+  DURATION_TOOLTIP,
+  ARRIVAL_TOOLTIP,
 } from '../../lib/uiCopy';
-import type { LoadSummary } from '../../lib/ride/load';
+import { totalMovingMinutes, type LoadSummary } from '../../lib/ride/load';
 import { InfoTooltip } from '../InfoTooltip';
 import { ZoneBreakdown } from './ZoneBreakdown';
 
@@ -58,8 +60,9 @@ export function RouteSummary({ points, chunks, startDateTime, load }: RouteSumma
 
   const totalDistanceKm = points[points.length - 1]?.cumKm ?? 0;
   const gainM = elevationGain(points);
-  const totalMin = totalDuration(chunks);
-  const avgKph = totalMin > 0 ? (totalDistanceKm / totalMin) * 60 : 0;
+  const movingMin = totalMovingMinutes(chunks);
+  const elapsedMin = totalDuration(chunks);
+  const avgKph = movingMin > 0 ? (totalDistanceKm / movingMin) * 60 : 0;
 
   return (
     <>
@@ -77,8 +80,11 @@ export function RouteSummary({ points, chunks, startDateTime, load }: RouteSumma
         </span>
       </div>
       <div className="route-summary__item">
-        <span className="route-summary__label">Duration</span>
-        <span className="route-summary__value">{formatMinutes(totalMin)}</span>
+        <span className="route-summary__label">
+          Duration
+          <InfoTooltip content={DURATION_TOOLTIP} label="What the duration includes" />
+        </span>
+        <span className="route-summary__value">{formatMinutes(movingMin)}</span>
       </div>
       <div className="route-summary__item">
         <span className="route-summary__label">Avg speed</span>
@@ -87,8 +93,11 @@ export function RouteSummary({ points, chunks, startDateTime, load }: RouteSumma
         </span>
       </div>
       <div className="route-summary__item">
-        <span className="route-summary__label">Arrival</span>
-        <span className="route-summary__value">{formatArrival(startDateTime, totalMin)}</span>
+        <span className="route-summary__label">
+          Arrival
+          <InfoTooltip content={ARRIVAL_TOOLTIP} label="What the arrival time includes" />
+        </span>
+        <span className="route-summary__value">{formatArrival(startDateTime, elapsedMin)}</span>
       </div>
       <div className="route-summary__item">
         <span className="route-summary__label">Chunks</span>

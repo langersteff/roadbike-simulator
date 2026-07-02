@@ -77,3 +77,13 @@ export const RIDE_PROFILE_TOOLTIP = [
 ].join('\n');
 
 export const RIDE_LOAD_CAVEAT = 'Training load is estimated from modelled effort, not measured power.';
+
+export const DURATION_TOOLTIP = [
+  'Moving time only — this matches the time-in-zone totals below.',
+  'Stops at lights and junctions in urban sections are excluded here but included in the arrival time.',
+].join('\n');
+
+export const ARRIVAL_TOOLTIP = [
+  'Estimated clock time you arrive, based on the start time.',
+  'Includes moving time plus stops at lights and junctions in urban sections, so it runs later than the duration.',
+].join('\n');

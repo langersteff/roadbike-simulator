@@ -23,6 +23,14 @@ function chunkMovingSeconds(chunk: Chunk): number {
   return Math.max(0, chunk.durationMin - dwellMin) * 60;
 }
 
+/**
+ * Pedaling time across the ride, excluding urban stop dwell. This is the basis the zone tallies
+ * are built on, so displaying it as the ride duration keeps Duration equal to the sum of zones.
+ */
+export function totalMovingMinutes(chunks: Chunk[]): number {
+  return chunks.reduce((sum, chunk) => sum + chunkMovingSeconds(chunk), 0) / 60;
+}
+
 function tssFrom(fourthPowerTime: number, seconds: number, ftpW: number): number {
   if (ftpW <= 0 || seconds <= 0) return 0;
   const np = (fourthPowerTime / seconds) ** 0.25;
