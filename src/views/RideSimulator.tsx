@@ -32,12 +32,14 @@ import type {
   Chunk,
   ChunkOverrides,
   ColorScale,
+  RideBreak,
   RideSimulatorState,
   RiderProfile,
 } from '../lib/ride/types';
 import { loadRideState, saveRideState } from '../lib/ride/storage';
 import { computeLoadSummary } from '../lib/ride/load';
-import { deriveFtpW } from '../lib/ride/zones';
+import { deriveFtpW, RIDE_PROFILES } from '../lib/ride/zones';
+import { formatMinutes } from '../lib/uiCopy';
 import type { Surface } from '../types';
 import { GpxUpload } from '../components/ride/GpxUpload';
 import { RiderProfileForm } from '../components/ride/RiderProfileForm';
@@ -49,6 +51,8 @@ import { VelocityChart } from '../components/ride/VelocityChart';
 import { ColorScaleToggle } from '../components/ride/ColorScaleToggle';
 import { ZoneLegend } from '../components/ride/ZoneLegend';
 import { RouteSummary } from '../components/ride/RouteSummary';
+import { BreaksPanel } from '../components/ride/BreaksPanel';
+import { CollapsibleSection } from '../components/ride/CollapsibleSection';
 import { ChunkList } from '../components/ride/ChunkList';
 import { InfoTooltip } from '../components/InfoTooltip';
 import { ModelInfoButton } from '../components/ModelInfo';
@@ -119,6 +123,7 @@ const initialState = (): RideSimulatorState => {
       autoAerobar: stored.autoAerobar ?? false,
       keepPowerSteady: stored.keepPowerSteady ?? false,
       heatEffect: stored.heatEffect ?? false,
+      breaks: stored.breaks ?? [],
     };
   }
   return {
@@ -131,6 +136,7 @@ const initialState = (): RideSimulatorState => {
     autoAerobar: false,
     keepPowerSteady: false,
     heatEffect: false,
+    breaks: [],
   };
 };
 
@@ -278,7 +284,7 @@ export function RideSimulator() {
             surfaces: activeSurfaces,
           }),
         );
-        const seeded = cascadeEta(seedChunks);
+        const seeded = cascadeEta(seedChunks, state.breaks ?? []);
 
         const requests = seeded.map((chunk) => {
           const midKm = (chunk.startKm + chunk.endKm) / 2;
@@ -316,6 +322,7 @@ export function RideSimulator() {
           urbanRanges: activeUrbanRanges,
           curvyRanges: activeCurvyRanges,
           surfaces: activeSurfaces,
+          breaks: state.breaks ?? [],
         });
 
         const dedupe = dedupeAdjacentChunks(finalChunks, nextRanges, weatherResults, {
@@ -342,6 +349,7 @@ export function RideSimulator() {
             urbanRanges: activeUrbanRanges,
             curvyRanges: activeCurvyRanges,
             surfaces: activeSurfaces,
+            breaks: state.breaks ?? [],
           });
           displayRanges = dedupe.ranges;
           displayWeather = dedupe.weather;
@@ -359,7 +367,7 @@ export function RideSimulator() {
         setBusy(false);
       }
     },
-    [orientedPoints, overridesByChunk, state.profile, state.startDateTime, state.autoAerobar, state.keepPowerSteady, state.heatEffect, state.rideProfile, setUrbanPlaces],
+    [orientedPoints, overridesByChunk, state.profile, state.startDateTime, state.autoAerobar, state.keepPowerSteady, state.heatEffect, state.rideProfile, state.breaks, setUrbanPlaces],
   );
 
   const reSimulate = useCallback(
@@ -382,11 +390,12 @@ export function RideSimulator() {
         curvyRanges,
         surfaces:
           surfacesRef.current.length === orientedPoints.length ? surfacesRef.current : undefined,
+        breaks: state.breaks ?? [],
       });
       setState((prev) => ({ ...prev, chunks }));
       return chunks;
     },
-    [orientedPoints, state.profile, state.autoAerobar, state.keepPowerSteady, state.heatEffect, state.rideProfile, urbanRanges, curvyRanges],
+    [orientedPoints, state.profile, state.autoAerobar, state.keepPowerSteady, state.heatEffect, state.rideProfile, state.breaks, urbanRanges, curvyRanges],
   );
 
   const calculateSurfaceSpeeds = useCallback(async () => {
@@ -592,12 +601,16 @@ export function RideSimulator() {
     setState((prev) => ({ ...prev, profile: next }));
   };
 
+  const handleBreaksChange = (next: RideBreak[]) => {
+    setState((prev) => ({ ...prev, breaks: next }));
+  };
+
   useEffect(() => {
     if (ranges.length > 0) {
       reSimulate(overridesByChunk, ranges, weatherByChunk);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.profile, state.rideProfile, state.autoAerobar, state.keepPowerSteady, state.heatEffect]);
+  }, [state.profile, state.rideProfile, state.autoAerobar, state.keepPowerSteady, state.heatEffect, state.breaks]);
 
   const handleOverrideChange = (chunkIndex: number, next: ChunkOverrides) => {
     const nextOverrides = { ...overridesByChunk, [chunkIndex]: next };
@@ -690,6 +703,21 @@ export function RideSimulator() {
     [state.chunks, state.profile.baselinePower],
   );
 
+  const breaks = state.breaks ?? [];
+  const breakMinutes = breaks.reduce((sum, brk) => sum + brk.durationMin, 0);
+  const totalKm = orientedPoints.length > 0 ? orientedPoints[orientedPoints.length - 1].cumKm : 0;
+
+  const profileSummary = `${state.profile.riderWeight} kg · ${state.profile.baselinePower} W · ${RIDE_PROFILES[state.rideProfile ?? 'endurance'].label}`;
+  const splitSummary = [
+    state.split.grade && 'Grade',
+    state.split.fixedDistance?.on && `every ${state.split.fixedDistance.km} km`,
+    state.split.urbanArea && 'Urban',
+    state.split.curvy && 'Curvy',
+  ]
+    .filter(Boolean)
+    .join(' · ') || 'No splitting';
+  const breaksSummary = breaks.length === 0 ? 'None' : `${breaks.length} · ${formatMinutes(breakMinutes)}`;
+
   return (
     <div className="app">
       <header className="app__header">
@@ -724,8 +752,7 @@ export function RideSimulator() {
         </button>
       </section>
 
-      <section className="ride-section">
-        <h2 className="ride-section__title">Rider profile</h2>
+      <CollapsibleSection title="Rider profile" summary={profileSummary}>
         <RiderProfileForm
           profile={state.profile}
           rideProfile={state.rideProfile ?? 'endurance'}
@@ -783,17 +810,17 @@ export function RideSimulator() {
             <span>{surfaceStatus}</span>
           </div>
         )}
-      </section>
+      </CollapsibleSection>
 
-      <section className="ride-section">
-        <div className="ride-section__title-row">
-          <h2 className="ride-section__title">Split strategy</h2>
-          <div className="ride-section__title-actions">
-            <button type="button" className="btn btn--ghost" onClick={() => setTuningOpen((open) => !open)}>
-              Tune…
-            </button>
-          </div>
-        </div>
+      <CollapsibleSection
+        title="Split strategy"
+        summary={splitSummary}
+        actions={
+          <button type="button" className="btn btn--ghost" onClick={() => setTuningOpen((open) => !open)}>
+            Tune…
+          </button>
+        }
+      >
         <SplitStrategyPicker
           value={state.split}
           onChange={handleSplitChange}
@@ -810,7 +837,7 @@ export function RideSimulator() {
             onClose={() => setTuningOpen(false)}
           />
         )}
-      </section>
+      </CollapsibleSection>
 
       {persistenceWarning && <div className="ride-notice ride-notice--warn">{persistenceWarning}</div>}
       {weatherError && <div className="ride-notice ride-notice--warn">{weatherError}</div>}
@@ -825,15 +852,25 @@ export function RideSimulator() {
         </div>
       )}
 
-      <section className="ride-section">
-        <h2 className="ride-section__title">Summary</h2>
+      <CollapsibleSection title="Breaks" summary={breaksSummary}>
+        <BreaksPanel
+          breaks={breaks}
+          chunks={state.chunks}
+          startDateTime={state.startDateTime}
+          totalKm={totalKm}
+          onChange={handleBreaksChange}
+        />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Summary" defaultOpen>
         <RouteSummary
             points={orientedPoints}
             chunks={state.chunks}
             startDateTime={state.startDateTime}
             load={load}
+            breakMinutes={breakMinutes}
         />
-      </section>
+      </CollapsibleSection>
 
       <section className="ride-section ride-section--map" ref={mapSectionRef}>
         <div className="ride-section__title-row">
@@ -863,6 +900,7 @@ export function RideSimulator() {
           routePoints={orientedPoints}
           startDateTime={state.startDateTime}
           daylightWindows={daylightWindows}
+          breaks={breaks}
           ftpW={deriveFtpW(state.profile.baselinePower)}
           onHoverKm={setHoveredKm}
         />

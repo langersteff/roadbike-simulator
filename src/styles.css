@@ -849,6 +849,143 @@ body {
   margin-bottom: 4px;
 }
 
+.collapsible__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.collapsible__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.collapsible__toggle svg {
+  color: var(--text-soft);
+  flex-shrink: 0;
+}
+
+.collapsible__title {
+  margin: 0;
+}
+
+.collapsible__summary {
+  font-size: 13px;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collapsible__body {
+  margin-top: 16px;
+}
+
+.breaks-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.breaks-panel__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+.breaks-panel__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.breaks-panel__empty {
+  color: var(--text-soft);
+  font-size: 13px;
+  margin: 0;
+}
+
+.breaks-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.breaks-panel__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.breaks-panel__fields {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.breaks-panel__field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.breaks-panel__field input {
+  width: 64px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.breaks-panel__field--time input {
+  width: 52px;
+}
+
+.breaks-panel__unit,
+.breaks-panel__for {
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+.breaks-panel__resolved {
+  flex: 1;
+  min-width: 180px;
+  font-size: 13px;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.breaks-panel__remove {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+}
+
 .route-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

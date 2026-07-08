@@ -9,6 +9,7 @@ import {
   RIDE_LOAD_CAVEAT,
   DURATION_TOOLTIP,
   ARRIVAL_TOOLTIP,
+  REST_TOOLTIP,
 } from '../../lib/uiCopy';
 import { totalMovingMinutes, type LoadSummary } from '../../lib/ride/load';
 import { InfoTooltip } from '../InfoTooltip';
@@ -21,6 +22,7 @@ interface RouteSummaryProps {
   chunks: Chunk[];
   startDateTime: string;
   load: LoadSummary | null;
+  breakMinutes: number;
 }
 
 function elevationGain(points: RoutePoint[]): number {
@@ -44,7 +46,7 @@ function formatArrival(startDateTime: string, totalMin: number): string {
   return arrival.toLocaleString();
 }
 
-export function RouteSummary({ points, chunks, startDateTime, load }: RouteSummaryProps) {
+export function RouteSummary({ points, chunks, startDateTime, load, breakMinutes }: RouteSummaryProps) {
   const [copied, setCopied] = useState<ZoneCopyTarget | null>(null);
 
   const copyZones = async (target: ZoneCopyTarget) => {
@@ -61,7 +63,7 @@ export function RouteSummary({ points, chunks, startDateTime, load }: RouteSumma
   const totalDistanceKm = points[points.length - 1]?.cumKm ?? 0;
   const gainM = elevationGain(points);
   const movingMin = totalMovingMinutes(chunks);
-  const elapsedMin = totalDuration(chunks);
+  const elapsedMin = totalDuration(chunks) + breakMinutes;
   const avgKph = movingMin > 0 ? (totalDistanceKm / movingMin) * 60 : 0;
 
   return (
@@ -92,6 +94,15 @@ export function RouteSummary({ points, chunks, startDateTime, load }: RouteSumma
           {avgKph.toFixed(1)} km/h
         </span>
       </div>
+      {breakMinutes > 0 && (
+        <div className="route-summary__item">
+          <span className="route-summary__label">
+            Rest
+            <InfoTooltip content={REST_TOOLTIP} label="What the rest time includes" />
+          </span>
+          <span className="route-summary__value">{formatMinutes(breakMinutes)}</span>
+        </div>
+      )}
       <div className="route-summary__item">
         <span className="route-summary__label">
           Arrival

@@ -30,7 +30,7 @@ import {
   type IndexRange,
   type UrbanRange,
 } from '../chunking/strategies';
-import type { Chunk, ChunkOverrides, RiderProfile } from './types';
+import type { Chunk, ChunkOverrides, RideBreak, ResolvedBreak, RiderProfile } from './types';
 import {
   crosswindKphFromWeather,
   crosswindMsForAero,
@@ -620,13 +620,77 @@ export function evaluateChunk({
   };
 }
 
-export function cascadeEta(chunks: Array<Omit<Chunk, 'etaFromStartMin'>>): Chunk[] {
+type CascadeChunk = Pick<Chunk, 'startKm' | 'endKm' | 'durationMin'>;
+
+interface BreakWalk {
+  etas: number[];
+  resolved: ResolvedBreak[];
+}
+
+// Walks the chunks in order, accumulating elapsed ride time and injecting each break's stationary
+// duration at the point it occurs. Distance breaks fire once the route reaches their km; time
+// breaks fire once elapsed (moving + earlier breaks) reaches their target. Returns the per-chunk
+// start ETA plus every break resolved to a km + elapsed-start, so the chart and summary share one
+// source of truth. Any break that never triggers (positioned past the route end) is applied at the
+// end so its time still counts toward arrival.
+function walkWithBreaks(chunks: CascadeChunk[], breaks: RideBreak[]): BreakWalk {
+  const distanceBreaks = breaks
+    .filter((brk) => brk.anchor.kind === 'distance')
+    .sort((a, b) => (a.anchor as { km: number }).km - (b.anchor as { km: number }).km);
+  const timeBreaks = breaks
+    .filter((brk) => brk.anchor.kind === 'time')
+    .sort((a, b) => (a.anchor as { elapsedMin: number }).elapsedMin - (b.anchor as { elapsedMin: number }).elapsedMin);
+  const used = new Set<string>();
+  const resolved: ResolvedBreak[] = [];
+  const etas: number[] = [];
   let elapsed = 0;
-  return chunks.map((chunk) => {
-    const eta = elapsed;
+
+  const injectReached = (km: number) => {
+    for (const brk of distanceBreaks) {
+      if (used.has(brk.id)) continue;
+      if ((brk.anchor as { km: number }).km > km) continue;
+      resolved.push({ id: brk.id, km: (brk.anchor as { km: number }).km, atElapsedMin: elapsed, durationMin: brk.durationMin });
+      used.add(brk.id);
+      elapsed += brk.durationMin;
+    }
+    let progressed = true;
+    while (progressed) {
+      progressed = false;
+      for (const brk of timeBreaks) {
+        if (used.has(brk.id)) continue;
+        if ((brk.anchor as { elapsedMin: number }).elapsedMin > elapsed) continue;
+        resolved.push({ id: brk.id, km, atElapsedMin: elapsed, durationMin: brk.durationMin });
+        used.add(brk.id);
+        elapsed += brk.durationMin;
+        progressed = true;
+      }
+    }
+  };
+
+  for (const chunk of chunks) {
+    injectReached(chunk.startKm);
+    etas.push(elapsed);
     elapsed += chunk.durationMin;
-    return { ...chunk, etaFromStartMin: eta };
-  });
+  }
+
+  const endKm = chunks.length > 0 ? chunks[chunks.length - 1].endKm : 0;
+  for (const brk of [...distanceBreaks, ...timeBreaks]) {
+    if (used.has(brk.id)) continue;
+    resolved.push({ id: brk.id, km: endKm, atElapsedMin: elapsed, durationMin: brk.durationMin });
+    used.add(brk.id);
+    elapsed += brk.durationMin;
+  }
+
+  return { etas, resolved };
+}
+
+export function cascadeEta(chunks: Array<Omit<Chunk, 'etaFromStartMin'>>, breaks: RideBreak[] = []): Chunk[] {
+  const { etas } = walkWithBreaks(chunks, breaks);
+  return chunks.map((chunk, index) => ({ ...chunk, etaFromStartMin: etas[index] }));
+}
+
+export function resolveBreaks(chunks: CascadeChunk[], breaks: RideBreak[]): ResolvedBreak[] {
+  return walkWithBreaks(chunks, breaks).resolved;
 }
 
 interface SimulateOptions {
@@ -642,6 +706,7 @@ interface SimulateOptions {
   urbanRanges: UrbanRange[];
   curvyRanges: IndexRange[];
   surfaces?: Surface[];
+  breaks?: RideBreak[];
 }
 
 export function simulate({
@@ -657,6 +722,7 @@ export function simulate({
   urbanRanges,
   curvyRanges,
   surfaces,
+  breaks,
 }: SimulateOptions): Chunk[] {
   const evaluated = ranges.map((range, index) =>
     evaluateChunk({
@@ -675,5 +741,5 @@ export function simulate({
       surfaces,
     }),
   );
-  return cascadeEta(evaluated);
+  return cascadeEta(evaluated, breaks ?? []);
 }

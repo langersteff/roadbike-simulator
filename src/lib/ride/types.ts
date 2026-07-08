@@ -16,6 +16,23 @@ export interface RiderProfile {
   defaultPosition: Position;
 }
 
+export type BreakAnchor =
+  | { kind: 'distance'; km: number }
+  | { kind: 'time'; elapsedMin: number };
+
+export interface RideBreak {
+  id: string;
+  anchor: BreakAnchor;
+  durationMin: number;
+}
+
+export interface ResolvedBreak {
+  id: string;
+  km: number;
+  atElapsedMin: number;
+  durationMin: number;
+}
+
 export interface ChunkOverrides {
   power?: number;
   position?: Position;
@@ -65,6 +82,7 @@ export interface RideSimulatorState {
   split: SplitConfig;
   profile: RiderProfile;
   chunks: Chunk[];
+  breaks?: RideBreak[];
   colorScale: ColorScale;
   autoAerobar?: boolean;
   keepPowerSteady?: boolean;

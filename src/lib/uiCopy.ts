@@ -85,5 +85,28 @@ export const DURATION_TOOLTIP = [
 
 export const ARRIVAL_TOOLTIP = [
   'Estimated clock time you arrive, based on the start time.',
-  'Includes moving time plus stops at lights and junctions in urban sections, so it runs later than the duration.',
+  'Includes moving time, stops at lights and junctions in urban sections, and any breaks you add, so it runs later than the duration.',
 ].join('\n');
+
+export function formatClockTime(startDateTime: string, offsetMin: number): string {
+  if (!startDateTime) return '—';
+  const start = new Date(startDateTime);
+  if (Number.isNaN(start.getTime())) return '—';
+  const at = new Date(start.getTime() + offsetMin * 60_000);
+  return at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+export const BREAKS_TITLE = 'Breaks';
+export const BREAKS_ADD_LABEL = 'Add break';
+export const BREAKS_EMPTY = 'No breaks yet — add a rest stop at a distance or a time into the ride.';
+export const BREAKS_TOOLTIP = [
+  'A break is stationary rest time inserted into the ride.',
+  'It pushes your arrival and everything after it later in the day (clock time, daylight, weather),',
+  'but does not change moving time, average speed, or training load.',
+].join('\n');
+export const REST_TOOLTIP = 'Total time spent stationary at the breaks you added.';
+export const BREAKS_HINT = 'Rest stops shift your arrival, daylight and weather — not your moving time or load.';
+
+export function formatBreakMarker(durationMin: number): string {
+  return `☕ ${Math.round(durationMin)}m`;
+}

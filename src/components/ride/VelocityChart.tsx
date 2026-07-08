@@ -5,6 +5,7 @@ import {
   ComposedChart,
   Line,
   ReferenceArea,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -14,13 +15,16 @@ import { POSITION_LABELS } from '../../lib/constants';
 import { gradeCategory } from '../../lib/chunking/strategies';
 import { bearingDeg, locationAtKm } from '../../lib/gpx/geometry';
 import type { RoutePoint } from '../../lib/gpx/parse';
-import type { Chunk } from '../../lib/ride/types';
+import type { Chunk, RideBreak } from '../../lib/ride/types';
 import type { DaylightWindow } from '../../lib/weather/openMeteo';
 import { crosswindKphFromWeather, headwindKphFromWeather } from '../../lib/ride/wind';
+import { resolveBreaks } from '../../lib/ride/simulate';
 import { zoneForFraction, ZONE_META } from '../../lib/ride/zones';
 import { cumulativeLoadByChunk, loadAtKm } from '../../lib/ride/load';
 import { ZoneLegend } from './ZoneLegend';
-import { formatMinutes, VELOCITY_EMPTY } from '../../lib/uiCopy';
+import { formatBreakMarker, formatClockTime, formatMinutes, VELOCITY_EMPTY } from '../../lib/uiCopy';
+
+const BREAK_COLOR = '#6b7280';
 
 const LOAD_COLOR = '#b91c1c';
 
@@ -29,6 +33,7 @@ interface VelocityChartProps {
   routePoints: RoutePoint[];
   startDateTime: string;
   daylightWindows: DaylightWindow[];
+  breaks: RideBreak[];
   ftpW: number;
   onHoverKm?: (km: number | null) => void;
 }
@@ -96,14 +101,6 @@ function daylightLevel(timeMs: number, windows: DaylightWindow[]): number {
 }
 
 const SAMPLE_STEP_KM = 0.2;
-
-function formatClockTime(startDateTime: string, offsetMin: number): string {
-  if (!startDateTime) return '—';
-  const start = new Date(startDateTime);
-  if (Number.isNaN(start.getTime())) return '—';
-  const at = new Date(start.getTime() + offsetMin * 60_000);
-  return at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
 
 function chunkAtKm(chunks: Chunk[], km: number): Chunk {
   for (const chunk of chunks) {
@@ -247,6 +244,7 @@ export function VelocityChart({
   routePoints,
   startDateTime,
   daylightWindows,
+  breaks,
   ftpW,
   onHoverKm,
 }: VelocityChartProps) {
@@ -258,6 +256,7 @@ export function VelocityChart({
     [chunks, routePoints, startDateTime, daylightWindows],
   );
   const bands = useMemo(() => zoneBands(chunks, ftpW), [chunks, ftpW]);
+  const breakMarkers = useMemo(() => resolveBreaks(chunks, breaks), [chunks, breaks]);
   const chartData = useMemo(() => {
     if (ftpW <= 0) return data;
     const byChunk = cumulativeLoadByChunk(chunks, ftpW);
@@ -326,7 +325,7 @@ export function VelocityChart({
       <ResponsiveContainer width="100%" height={260}>
         <ComposedChart
           data={chartData}
-          margin={{ top: 8, right: 24, bottom: 8, left: 0 }}
+          margin={{ top: 32, right: 24, bottom: 8, left: 0 }}
           onMouseMove={(handlerState) => {
             if (!onHoverKm) return;
             const label = handlerState?.activeLabel;
@@ -376,6 +375,36 @@ export function VelocityChart({
                 stroke="none"
               />
             ))}
+          {breakMarkers.length > 0 && (
+            <YAxis
+              yAxisId="breakaxis"
+              domain={[0, 1]}
+              width={0}
+              tick={false}
+              axisLine={false}
+              tickLine={false}
+            />
+          )}
+          {breakMarkers.length > 0 && (
+            <Line
+              yAxisId="breakaxis"
+              dataKey={() => 0}
+              stroke="none"
+              dot={false}
+              legendType="none"
+              isAnimationActive={false}
+            />
+          )}
+          {breakMarkers.map((marker) => (
+            <ReferenceLine
+              key={marker.id}
+              yAxisId="breakaxis"
+              x={marker.km}
+              stroke={BREAK_COLOR}
+              strokeDasharray="4 3"
+              label={{ value: formatBreakMarker(marker.durationMin), position: 'top', fontSize: 14, fill: BREAK_COLOR }}
+            />
+          ))}
           <XAxis
             dataKey="km"
             type="number"

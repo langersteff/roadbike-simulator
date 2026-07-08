@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { buildChunks, evaluateChunk, heatPowerFactor, windPowerFactor, climbDemandFraction } from './simulate';
+import {
+  buildChunks,
+  cascadeEta,
+  evaluateChunk,
+  heatPowerFactor,
+  resolveBreaks,
+  simulate,
+  windPowerFactor,
+  climbDemandFraction,
+} from './simulate';
+import { computeLoadSummary } from './load';
 import { RIDE_PROFILES, deriveFtpW } from './zones';
 import { headwindKphFromWeather } from './wind';
 import { computeCurvyRanges, type SplitConfig } from '../chunking/strategies';
@@ -7,7 +17,7 @@ import { withCumulativeKm } from '../gpx/geometry';
 import { computeOutputs } from '../calc';
 import { DESCENT_MAX_KPH, URBAN_STOPS_PER_KM, STOP_DWELL_S, STOP_ACCEL_PENALTY_S, WIND_HEIGHT_FACTOR } from '../constants';
 import type { RoutePoint } from '../gpx/parse';
-import type { RiderProfile } from './types';
+import type { Chunk, RideBreak, RiderProfile } from './types';
 import type { WeatherSample } from '../weather/openMeteo';
 
 const PROFILE: RiderProfile = {
@@ -354,5 +364,99 @@ describe('wind raises effort power', () => {
       overrides: { headwindKph: 25 },
     });
     expect(windy.effectivePower).toBeGreaterThan(calm.effectivePower);
+  });
+});
+
+// Three back-to-back 10-minute chunks spanning 0..30 km. Only startKm/endKm/durationMin drive
+// the ETA cascade, so a partial cast keeps the fixtures readable.
+function cascadeChunks(): Array<Omit<Chunk, 'etaFromStartMin'>> {
+  return [0, 10, 20].map(
+    (startKm) => ({ startKm, endKm: startKm + 10, durationMin: 10 }) as unknown as Omit<Chunk, 'etaFromStartMin'>,
+  );
+}
+
+describe('cascadeEta with breaks', () => {
+  it('matches the plain cascade when there are no breaks', () => {
+    const etas = cascadeEta(cascadeChunks()).map((chunk) => chunk.etaFromStartMin);
+    expect(etas).toEqual([0, 10, 20]);
+  });
+
+  it('shifts only the chunks after a distance break', () => {
+    const breaks: RideBreak[] = [{ id: 'a', anchor: { kind: 'distance', km: 10 }, durationMin: 30 }];
+    const etas = cascadeEta(cascadeChunks(), breaks).map((chunk) => chunk.etaFromStartMin);
+    expect(etas).toEqual([0, 40, 50]);
+  });
+
+  it('injects a time break at the first boundary where elapsed reaches the target', () => {
+    const breaks: RideBreak[] = [{ id: 'b', anchor: { kind: 'time', elapsedMin: 15 }, durationMin: 20 }];
+    const etas = cascadeEta(cascadeChunks(), breaks).map((chunk) => chunk.etaFromStartMin);
+    expect(etas).toEqual([0, 10, 40]);
+  });
+
+  it('accumulates multiple breaks and still counts one placed past the route end', () => {
+    const breaks: RideBreak[] = [
+      { id: 'near', anchor: { kind: 'distance', km: 5 }, durationMin: 10 },
+      { id: 'far', anchor: { kind: 'distance', km: 100 }, durationMin: 5 },
+    ];
+    const resolved = resolveBreaks(cascadeChunks(), breaks);
+    const totalBreakMin = resolved.reduce((sum, brk) => sum + brk.durationMin, 0);
+    expect(totalBreakMin).toBe(15);
+    const beyondRoute = resolved.find((brk) => brk.id === 'far');
+    expect(beyondRoute?.km).toBe(30);
+  });
+});
+
+describe('resolveBreaks', () => {
+  it('resolves distance and time anchors to km + elapsed start', () => {
+    const breaks: RideBreak[] = [
+      { id: 'dist', anchor: { kind: 'distance', km: 10 }, durationMin: 30 },
+      { id: 'time', anchor: { kind: 'time', elapsedMin: 15 }, durationMin: 20 },
+    ];
+    const resolved = resolveBreaks(cascadeChunks(), breaks);
+    const dist = resolved.find((brk) => brk.id === 'dist');
+    const time = resolved.find((brk) => brk.id === 'time');
+    expect(dist).toMatchObject({ km: 10, atElapsedMin: 10 });
+    // The distance break adds 30 min at km 10, so elapsed at the next boundary already exceeds 15.
+    expect(time?.km).toBe(10);
+  });
+});
+
+describe('breaks leave training load untouched', () => {
+  it('produces identical load with and without a break, only shifting ETAs', () => {
+    const points = straightRoute([100, 110, 130, 160, 200], 4);
+    const split: SplitConfig = {
+      grade: true,
+      fixedDistance: { on: true, km: 4 },
+      urbanArea: false,
+      curvy: false,
+      minSectionKm: 0.5,
+      maxSectionKm: 10,
+    };
+    const ranges = buildChunks(points, split, 0, []);
+    expect(ranges.length).toBeGreaterThan(1);
+    const base = {
+      points,
+      ranges,
+      profile: PROFILE,
+      overrides: ranges.map(() => ({})),
+      weather: ranges.map(() => null),
+      autoAerobar: false,
+      keepPowerSteady: true,
+      heatEffect: false,
+      rideProfile: 'endurance' as const,
+      urbanRanges: [],
+      curvyRanges: [],
+    };
+    const ftpW = deriveFtpW(PROFILE.baselinePower);
+    const without = simulate(base);
+    const withBreak = simulate({
+      ...base,
+      breaks: [{ id: 'x', anchor: { kind: 'distance', km: 4 }, durationMin: 30 }],
+    });
+
+    expect(computeLoadSummary(withBreak, ftpW)).toEqual(computeLoadSummary(without, ftpW));
+    const lastEta = withBreak[withBreak.length - 1].etaFromStartMin;
+    const baselineEta = without[without.length - 1].etaFromStartMin;
+    expect(lastEta).toBeGreaterThan(baselineEta);
   });
 });
