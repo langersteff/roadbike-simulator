@@ -62,7 +62,7 @@ export function buildZoneIntervalsText(
 
 export const SUMMARY_EMPTY = 'Upload a GPX file to see distance, elevation, duration and arrival time.';
 export const CHUNKS_EMPTY = 'Upload a GPX file to generate per-chunk plans you can edit and override.';
-export const VELOCITY_EMPTY = 'Velocity chart appears here once a route is loaded.';
+export const VELOCITY_EMPTY = 'Ride graph appears here once a route is loaded.';
 
 export const BASELINE_POWER_TOOLTIP = [
   'Your steady, all-day effort — the power you could hold on flat ground for hours.',

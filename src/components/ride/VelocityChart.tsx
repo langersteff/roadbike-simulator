@@ -55,6 +55,18 @@ function zoneBands(chunks: Chunk[], ftpW: number): ZoneBand[] {
 
 type MetricKey = 'velocity' | 'wind' | 'crosswind' | 'rain' | 'elevation' | 'temperature' | 'daylight';
 
+// Several metrics can share one Y-axis (wind + crosswind), so map each metric to its axis id. The
+// axis of the first-selected metric is drawn on the left (main); every other axis goes right.
+const METRIC_AXIS: Record<MetricKey, string> = {
+  velocity: 'speed',
+  wind: 'wind',
+  crosswind: 'wind',
+  rain: 'rain',
+  elevation: 'elevation',
+  temperature: 'temperature',
+  daylight: 'daylight',
+};
+
 interface MetricConfig {
   key: MetricKey;
   label: string;
@@ -62,7 +74,7 @@ interface MetricConfig {
 }
 
 const METRICS: MetricConfig[] = [
-  { key: 'velocity', label: 'Velocity', color: '#3457d5' },
+  { key: 'velocity', label: 'Speed', color: '#3457d5' },
   { key: 'elevation', label: 'Elevation', color: '#8a6f47' },
   { key: 'temperature', label: 'Temperature', color: '#f97316' },
   { key: 'wind', label: 'Head-/Tailwind', color: '#c8463a' },
@@ -129,6 +141,30 @@ function localBearingAtKm(points: RoutePoint[], km: number, windowKm = SAMPLE_ST
   return bearingDeg(lookbehind, lookahead);
 }
 
+// The physics model resolves one average speed per chunk, so plotting it verbatim yields a
+// staircase. We instead anchor each chunk's speed at its midpoint and linearly interpolate between
+// neighbouring midpoints, giving a continuous line that a monotone curve then smooths.
+function speedInterpolator(chunks: Chunk[]): (km: number) => number {
+  const centers = chunks.map((chunk) => ({
+    km: (chunk.startKm + chunk.endKm) / 2,
+    speed: chunk.effectiveVelocityKph,
+  }));
+  return (km: number) => {
+    if (km <= centers[0].km) return centers[0].speed;
+    const last = centers[centers.length - 1];
+    if (km >= last.km) return last.speed;
+    for (let index = 0; index < centers.length - 1; index += 1) {
+      const lower = centers[index];
+      const upper = centers[index + 1];
+      if (km >= lower.km && km <= upper.km) {
+        const fraction = (km - lower.km) / (upper.km - lower.km);
+        return lower.speed + (upper.speed - lower.speed) * fraction;
+      }
+    }
+    return last.speed;
+  };
+}
+
 function buildPoints(
   chunks: Chunk[],
   routePoints: RoutePoint[],
@@ -137,6 +173,7 @@ function buildPoints(
 ): ChartPoint[] {
   if (chunks.length === 0) return [];
   const totalKm = chunks[chunks.length - 1].endKm;
+  const speedAtKm = speedInterpolator(chunks);
   const stops = new Set<number>();
   for (const chunk of chunks) {
     stops.add(chunk.startKm);
@@ -182,7 +219,7 @@ function buildPoints(
 
     return {
       km: kmValue,
-      velocity: chunk.effectiveVelocityKph,
+      velocity: speedAtKm(kmValue),
       headwind: localHeadwind >= 0 ? localHeadwind : null,
       tailwind: localHeadwind < 0 ? localHeadwind : null,
       crosswind: localCrosswind,
@@ -217,7 +254,7 @@ function ChunkTooltip({ active, payload, chunks, startDateTime, shown, showLoad 
       <div>At {point.km.toFixed(2)} km</div>
       <div>Grade: {chunk.effectiveGradePct.toFixed(1)} % · {gradeCategory(chunk.effectiveGradePct)}</div>
       <div>Power: {chunk.effectivePower.toFixed(0)} W</div>
-      {shown.has('velocity') && <div>Velocity: {point.velocity.toFixed(1)} km/h</div>}
+      {shown.has('velocity') && <div>Speed: {point.velocity.toFixed(1)} km/h</div>}
       {shown.has('elevation') && <div>Elevation: {point.elevation.toFixed(0)} m</div>}
       {shown.has('temperature') && <div>Temperature: {point.temperature.toFixed(0)} °C</div>}
       {shown.has('wind') && (
@@ -248,9 +285,10 @@ export function VelocityChart({
   ftpW,
   onHoverKm,
 }: VelocityChartProps) {
-  const [shown, setShown] = useState<Set<MetricKey>>(() => new Set<MetricKey>(['velocity']));
+  const [shownOrder, setShownOrder] = useState<MetricKey[]>(['velocity']);
   const [showZones, setShowZones] = useState(false);
   const [showLoad, setShowLoad] = useState(false);
+  const shown = useMemo(() => new Set(shownOrder), [shownOrder]);
   const data = useMemo(
     () => buildPoints(chunks, routePoints, startDateTime, daylightWindows),
     [chunks, routePoints, startDateTime, daylightWindows],
@@ -268,13 +306,19 @@ export function VelocityChart({
   }
 
   const toggle = (key: MetricKey) => {
-    setShown((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+    setShownOrder((prev) => (prev.includes(key) ? prev.filter((entry) => entry !== key) : [...prev, key]));
   };
+
+  const resetGraph = () => {
+    setShownOrder(['velocity']);
+    setShowZones(false);
+    setShowLoad(false);
+  };
+
+  const primaryAxisId = shownOrder.length > 0 ? METRIC_AXIS[shownOrder[0]] : null;
+  const axisOrientation = (axisId: string): 'left' | 'right' => (primaryAxisId === axisId ? 'left' : 'right');
+  const axisLabelPosition = (axisId: string): 'insideLeft' | 'insideRight' =>
+    primaryAxisId === axisId ? 'insideLeft' : 'insideRight';
 
   const showSpeedAxis = shown.has('velocity');
   const showWindAxis = shown.has('wind') || shown.has('crosswind');
@@ -321,6 +365,9 @@ export function VelocityChart({
           <span className="velocity-chart__swatch" style={{ background: LOAD_COLOR }} />
           Training load
         </label>
+        <button type="button" className="velocity-chart__reset" onClick={resetGraph}>
+          Reset
+        </button>
       </div>
       <ResponsiveContainer width="100%" height={260}>
         <ComposedChart
@@ -417,10 +464,10 @@ export function VelocityChart({
           {showSpeedAxis && (
             <YAxis
               yAxisId="speed"
-              orientation="left"
+              orientation={axisOrientation('speed')}
               width={52}
               tickFormatter={(value: number) => value.toFixed(0)}
-              label={{ value: 'km/h', angle: -90, position: 'insideLeft', fill: '#3457d5' }}
+              label={{ value: 'km/h', angle: -90, position: axisLabelPosition('speed'), fill: '#3457d5' }}
               stroke="#3457d5"
               tickLine={false}
             />
@@ -428,10 +475,10 @@ export function VelocityChart({
           {showTemperatureAxis && (
             <YAxis
               yAxisId="temperature"
-              orientation="right"
+              orientation={axisOrientation('temperature')}
               width={52}
               tickFormatter={(value: number) => value.toFixed(0)}
-              label={{ value: '°C', angle: -90, position: 'insideRight', fill: '#f97316' }}
+              label={{ value: '°C', angle: -90, position: axisLabelPosition('temperature'), fill: '#f97316' }}
               stroke="#f97316"
               tickLine={false}
             />
@@ -439,10 +486,10 @@ export function VelocityChart({
           {showRainAxis && (
             <YAxis
               yAxisId="rain"
-              orientation="right"
+              orientation={axisOrientation('rain')}
               width={52}
               tickFormatter={(value: number) => value.toFixed(1)}
-              label={{ value: 'mm/h', angle: -90, position: 'insideRight', fill: '#5fa9e8' }}
+              label={{ value: 'mm/h', angle: -90, position: axisLabelPosition('rain'), fill: '#5fa9e8' }}
               stroke="#5fa9e8"
               tickLine={false}
               domain={[0, 'auto']}
@@ -451,10 +498,10 @@ export function VelocityChart({
           {showElevationAxis && (
             <YAxis
               yAxisId="elevation"
-              orientation="right"
+              orientation={axisOrientation('elevation')}
               width={52}
               tickFormatter={(value: number) => value.toFixed(0)}
-              label={{ value: 'm', angle: -90, position: 'insideRight', fill: '#8a6f47' }}
+              label={{ value: 'm', angle: -90, position: axisLabelPosition('elevation'), fill: '#8a6f47' }}
               stroke="#8a6f47"
               tickLine={false}
             />
@@ -462,10 +509,10 @@ export function VelocityChart({
           {showWindAxis && (
             <YAxis
               yAxisId="wind"
-              orientation="right"
+              orientation={axisOrientation('wind')}
               width={56}
               tickFormatter={(value: number) => value.toFixed(0)}
-              label={{ value: 'wind km/h', angle: -90, position: 'insideRight', fill: '#c8463a' }}
+              label={{ value: 'wind km/h', angle: -90, position: axisLabelPosition('wind'), fill: '#c8463a' }}
               stroke="#c8463a"
               tickLine={false}
             />
@@ -473,12 +520,12 @@ export function VelocityChart({
           {showDaylightAxis && (
             <YAxis
               yAxisId="daylight"
-              orientation="right"
+              orientation={axisOrientation('daylight')}
               width={52}
               domain={[0, 1]}
               ticks={[0, 1]}
               tickFormatter={(value: number) => (value >= 0.5 ? 'day' : 'night')}
-              label={{ value: 'sun', angle: -90, position: 'insideRight', fill: '#eab308' }}
+              label={{ value: 'sun', angle: -90, position: axisLabelPosition('daylight'), fill: '#eab308' }}
               stroke="#eab308"
               tickLine={false}
             />
@@ -535,7 +582,7 @@ export function VelocityChart({
           )}
           {shown.has('velocity') && (
             <Area
-              type="stepAfter"
+              type="monotone"
               dataKey="velocity"
               yAxisId="speed"
               fill="#e9eefc"

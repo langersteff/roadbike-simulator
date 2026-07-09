@@ -37,7 +37,7 @@ import type {
   RiderProfile,
 } from '../lib/ride/types';
 import { loadRideState, saveRideState } from '../lib/ride/storage';
-import { computeLoadSummary } from '../lib/ride/load';
+import { computeLoadSummary, totalMovingMinutes } from '../lib/ride/load';
 import { deriveFtpW, RIDE_PROFILES } from '../lib/ride/zones';
 import { formatMinutes } from '../lib/uiCopy';
 import type { Surface } from '../types';
@@ -717,6 +717,16 @@ export function RideSimulator() {
     .filter(Boolean)
     .join(' · ') || 'No splitting';
   const breaksSummary = breaks.length === 0 ? 'None' : `${breaks.length} · ${formatMinutes(breakMinutes)}`;
+  const rideSummary =
+    state.chunks.length === 0
+      ? ''
+      : [
+          `${totalKm.toFixed(1)} km`,
+          formatMinutes(totalMovingMinutes(state.chunks)),
+          load && `${Math.round(load.tss)} TSS`,
+        ]
+          .filter(Boolean)
+          .join(' · ');
 
   return (
     <div className="app">
@@ -862,7 +872,7 @@ export function RideSimulator() {
         />
       </CollapsibleSection>
 
-      <CollapsibleSection title="Summary" defaultOpen>
+      <CollapsibleSection title="Summary" summary={rideSummary} defaultOpen>
         <RouteSummary
             points={orientedPoints}
             chunks={state.chunks}
@@ -894,7 +904,7 @@ export function RideSimulator() {
       </section>
 
       <section className="ride-section">
-        <h2 className="ride-section__title">Velocity</h2>
+        <h2 className="ride-section__title">Ride graph</h2>
         <VelocityChart
           chunks={state.chunks}
           routePoints={orientedPoints}
